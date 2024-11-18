@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from volkoff.main import VolkoffH
+from .main import VolkoffH
 
 class TestVolkoffH(unittest.TestCase):
     def setUp(self):

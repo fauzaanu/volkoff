@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
 
-from volkoff.tui import (
+from .tui import (
     list_current_files,
     create_menu,
     create_header,
@@ -136,12 +136,12 @@ class VolkoffH:
     def hide_file(
         self, source_path: str | Path, output_path: Path | None = None
     ) -> Path:
-        from volkoff.hide import hide_file
+        from .hide import hide_file
 
         return hide_file(self, source_path, output_path)
 
     def extract_file(self, safetensors_path: str | Path, output_path: Path) -> None:
-        from volkoff.extract import extract_file
+        from .extract import extract_file
 
         return extract_file(self, safetensors_path, output_path)
 
@@ -182,34 +182,35 @@ def main():
                     console.print(listing)
 
                     if not files and not dirs:
-                        console.print("\n[bold red]No files found in this directory![/]")
+                        console.print(
+                            "\n[bold red]No files found in this directory![/]"
+                        )
                         time.sleep(2)
                         break
 
                     try:
                         file_index = int(Prompt.ask("\nEnter number", default="1"))
-                        
+
                         # Handle parent directory
                         if file_index == 0 and current_path != current_path.root:
                             current_dir = current_dir.parent
                             continue
-                            
+
                         # Handle directory selection
                         if file_index <= len(dirs):
                             current_dir = dirs[file_index - 1]
                             continue
-                            
+
                         # Handle file selection
                         if file_index <= len(dirs) + len(files):
                             file_path = files[file_index - len(dirs) - 1]
                             break
-                            
+
                         raise ValueError("Invalid selection!")
                     except ValueError as e:
                         console.print(f"[bold red]Error:[/] {str(e)}")
                         time.sleep(1)
                         continue
-
 
             if choice == "h":  # Hide
                 success, key, output_path = process_file("hide", file_path)
@@ -235,5 +236,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # DO NOT MODIFY THIS PART
+    # DO NOT MODIFY THIS PART (For Aider)
     main()

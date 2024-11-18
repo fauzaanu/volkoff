@@ -18,38 +18,38 @@ def create_menu() -> str:
 def list_current_files(current_dir: Path = Path(".")):
     """
     List all files and directories in the given directory
-    
+
     Returns a tuple of (files, directories, current_path)
     """
     # Get all entries in the directory
     entries = list(current_dir.iterdir())
-    
+
     # Separate files and directories
     files = [f for f in entries if f.is_file()]
     dirs = [d for d in entries if d.is_dir()]
-    
+
     # Sort alphabetically
     files.sort()
     dirs.sort()
-    
+
     return files, dirs, current_dir.resolve()
 
 def format_directory_listing(files: list[Path], dirs: list[Path], current_path: Path) -> str:
     """Format the directory listing with numbers and icons"""
     output = [f"\n📂 Current directory: {current_path}\n"]
-    
+
     # Add parent directory option if not in root
     if current_path != current_path.root:
         output.append("  0   [blue]...[/] (Parent directory)")
-    
+
     # Add directories with folder emoji
     for i, dir_path in enumerate(dirs, start=1):
         output.append(f"  {i}   [blue]📁 {dir_path.name}[/]")
-    
+
     # Add files with file emoji
     for i, file_path in enumerate(files, start=len(dirs) + 1):
         output.append(f"  {i}   📄 {file_path.name}")
-    
+
     return "\n".join(output) if output else "\nNo files found in this directory"
 
 
@@ -58,7 +58,7 @@ def process_file(
 ) -> tuple[bool, str, Path | None]:
     """Process file with progress animation"""
     try:
-        from volkoff.main import VolkoffH
+        from .main import VolkoffH
 
         # Validate encryption key for extract operation
         if action == "extract" and not key:
