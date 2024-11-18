@@ -24,7 +24,12 @@ class OrionH:
     def __init__(self, encryption_key=None):
         self.private_key = None
         self.public_key = None
-        self.encryption_key = encryption_key or base64.urlsafe_b64encode(os.urandom(32)).decode()
+        if encryption_key:
+            self.encryption_key = encryption_key
+        else:
+            # Generate key using only alphanumeric characters
+            key_bytes = os.urandom(32)
+            self.encryption_key = ''.join(chr((b % 26) + 65) for b in key_bytes)  # Use only A-Z
 
     def generate_key(self):
         """Generate a Bitcoin-style private key using SECP256k1"""
