@@ -94,15 +94,10 @@ def process_file(
 
                 # Get original name without extension
                 original_name = Path(file_path).stem
-
-                # We'll get the actual extension after decryption
-                temp_output_path = output_dir / f"{original_name}_decrypted"
-
-                # Extract will handle decryption and proper extension
-                Volkoff.extract_file(file_path, temp_output_path)
-
-                # Use the actual output path for display
-                output_path = temp_output_path
+                temp_output_path = output_dir / original_name
+                
+                # Extract will handle decryption and return final path with proper extension
+                output_path = Volkoff.extract_file(file_path, temp_output_path)
 
                 for i in range(100):
                     progress.update(task, advance=1)
