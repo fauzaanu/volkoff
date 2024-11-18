@@ -33,12 +33,15 @@ OrionH provides two main operations: hiding files and extracting hidden files.
 To hide a file within a container file:
 
 ```bash
-python main.py hide --source <source_file> --container <container_file>
+python main.py hide --source <source_file> [--container <container_file>]
 ```
 
 Example:
 ```bash
 python main.py hide --source secret.txt --container image.jpg
+
+# Or let it generate a container image automatically:
+python main.py hide --source secret.txt
 ```
 
 When hiding a file, the program will generate and display a secure encryption key. **SAVE THIS KEY** in a password manager like Bitwarden - you will need it to decrypt your files later!

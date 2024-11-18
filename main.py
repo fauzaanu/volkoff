@@ -10,6 +10,8 @@ import os
 import sys
 import argparse
 import hashlib
+from PIL import Image
+import numpy as np
 from pathlib import Path
 from ecdsa import SigningKey, SECP256k1
 import base58
@@ -111,9 +113,26 @@ class OrionH:
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
     
-    def hide_file(self, source_path, container_path):
+    def _generate_default_container(self):
+        """Generate a default container image"""
+        # Create a random noise image
+        img_size = (800, 600)
+        random_array = np.random.randint(0, 255, (*img_size, 3), dtype=np.uint8)
+        img = Image.fromarray(random_array)
+        
+        # Save to a temporary file
+        container_path = 'container.png'
+        img.save(container_path)
+        return container_path
+
+    def hide_file(self, source_path, container_path=None):
         """Hide encrypted file data inside another file"""
         encrypted_data = self.encrypt_file(source_path)
+        
+        # Generate default container if none provided
+        if container_path is None:
+            container_path = self._generate_default_container()
+            print(f"Generated default container image: {container_path}")
         
         with open(container_path, 'ab') as container:
             container.write(b'\n###ORION###\n')
@@ -145,8 +164,8 @@ def main():
     
     try:
         if args.action == 'hide':
-            if not args.source or not args.container:
-                parser.error("hide action requires --source and --container arguments")
+            if not args.source:
+                parser.error("hide action requires --source argument")
             
             orion = OrionH()
             orion.generate_key()
