@@ -356,9 +356,12 @@ def main(input_file: str | None = None):
 
 if __name__ == "__main__":
     import sys
+    if len(sys.argv) <= 1:
+        Console().print("[bold red]Error:[/] Input file must be provided as argument")
+        sys.exit(1)
+        
     try:
-        input_file = sys.argv[1] if len(sys.argv) > 1 else None
-        main(input_file)
+        main(sys.argv[1])
     except (KeyboardInterrupt, EOFError):
         Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
     except Exception as e:
