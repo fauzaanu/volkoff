@@ -94,13 +94,13 @@ def process_file(
 
                 # Get original name without extension
                 original_name = Path(file_path).stem
-                
+
                 # We'll get the actual extension after decryption
                 temp_output_path = output_dir / f"{original_name}_decrypted"
-                
+
                 # Extract will handle decryption and proper extension
                 Volkoff.extract_file(file_path, temp_output_path)
-                
+
                 # Use the actual output path for display
                 output_path = temp_output_path
 
@@ -128,3 +128,6 @@ def display_result(
         console.print(f"\n[bold red]❌ Error:[/] {message}")
         if "Incorrect decryption key" in message:
             console.print("[yellow]Hint:[/] Make sure you're using the exact key that was provided during encryption")
+
+
+
