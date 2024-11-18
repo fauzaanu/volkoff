@@ -14,10 +14,13 @@ def hide_file(Volkoff, source_path: str | Path, output_path: Path | None = None)
     # Create output directory if it doesn't exist
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Store encrypted private key and original extension with encrypted data
+    # Read source file
+    with open(source_path, "rb") as f:
+        file_data = f.read()
+
+    # Create fully encrypted container with all metadata
     original_ext = Path(source_path).suffix
-    encrypted_private_key = Volkoff.encrypt_private_key()
-    stored_data = encrypted_private_key + b"###KEY###" + original_ext.encode() + b"###EXT###" + encrypted_data
+    stored_data = Volkoff.encrypt_container(Volkoff.key, original_ext, file_data)
 
     # Save to file
     with open(output_path, 'wb') as f:

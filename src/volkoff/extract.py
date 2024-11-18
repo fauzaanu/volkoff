@@ -6,16 +6,12 @@ def extract_file(Volkoff, safetensors_path: str | Path, output_path: Path) -> No
     with open(safetensors_path, 'rb') as f:
         stored_data = f.read()
 
-    # Split private key, extension and encrypted data
-    stored_key, rest = stored_data.split(b'###KEY###', 1)
-    original_ext, encrypted_data = rest.split(b'###EXT###', 1)
-    stored_key = stored_key.decode()
-    original_ext = original_ext.decode()
-
-    # Key verification happens automatically during decryption
-
-    # Decrypt the data
-    decrypted_data = Volkoff.decrypt_file(encrypted_data)
+    # Decrypt the entire container
+    private_key, original_ext, decrypted_data = Volkoff.decrypt_container(stored_data)
+    
+    # Verify the provided key matches the stored private key
+    if private_key != Volkoff.key:
+        raise ValueError("Invalid decryption key")
 
     # Write decrypted data to output file
     with open(output_path, 'wb') as output:

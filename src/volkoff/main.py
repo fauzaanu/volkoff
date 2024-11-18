@@ -42,13 +42,41 @@ class VolkoffH:
             # Create AESGCM instance for key encryption
             self.key_aesgcm = AESGCM(self.key_encryption_key)
             
-    def encrypt_private_key(self):
-        """Encrypt the private key for storage"""
+    def __init__(self, encryption_key: str | None = None):
+        if encryption_key:
+            # For extraction: use provided key
+            try:
+                self.key = bytes.fromhex(encryption_key)
+                if len(self.key) != 32:
+                    raise ValueError("Key must be 32 bytes (64 hex characters)")
+            except ValueError as e:
+                raise ValueError(f"Invalid key format: {str(e)}")
+            self.aesgcm = AESGCM(self.key)
+        else:
+            # For hiding: generate new random keys
+            self.key = os.urandom(32)  # Main encryption key
+            self.encryption_key = self.key.hex()
+            self.aesgcm = AESGCM(self.key)
+
+    def encrypt_container(self, private_key: bytes, file_ext: str, file_data: bytes) -> bytes:
+        """Encrypt the entire container including metadata"""
+        # Structure: [encrypted[private_key | ext | data]]
+        container = private_key + b"|" + file_ext.encode() + b"|" + file_data
         nonce = os.urandom(12)
-        encrypted_key = self.key_aesgcm.encrypt(nonce, self.key, None)
-        return nonce + encrypted_key
-            
-        self.aesgcm = AESGCM(self.key)
+        encrypted_container = self.aesgcm.encrypt(nonce, container, None)
+        return nonce + encrypted_container
+    
+    def decrypt_container(self, encrypted_container: bytes) -> tuple[bytes, str, bytes]:
+        """Decrypt the container and return components"""
+        nonce = encrypted_container[:12]
+        ciphertext = encrypted_container[12:]
+        
+        try:
+            decrypted = self.aesgcm.decrypt(nonce, ciphertext, None)
+            private_key, file_ext, file_data = decrypted.split(b"|", 2)
+            return private_key, file_ext.decode(), file_data
+        except Exception as e:
+            raise ValueError(f"Container decryption failed: {str(e)}")
             
     def encrypt_file(self, file_path):
         """Encrypt a file using AES-GCM"""
