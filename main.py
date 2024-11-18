@@ -141,8 +141,8 @@ class OrionH:
         }
         
         # Save to safetensors file
-        with safe_open(output_path, framework="numpy", mode="w") as f:
-            f.store_tensor("encrypted_data", encrypted_data)
+        with safe_open(output_path, framework="numpy") as f:
+            f.store_tensor("encrypted_data", encrypted_data.tobytes())
             f.write_metadata(metadata)
         
         return output_path
@@ -150,7 +150,7 @@ class OrionH:
     def extract_file(self, safetensors_path, output_path):
         """Extract and decrypt hidden file from safetensors file"""
         # Load the safetensors file
-        with safe_open(safetensors_path, framework="numpy", mode="r") as f:
+        with safe_open(safetensors_path, framework="numpy") as f:
             encrypted_data = f.get_tensor("encrypted_data")
             metadata = f.metadata()
         
@@ -159,7 +159,7 @@ class OrionH:
         self.public_key = self.private_key.get_verifying_key()
         
         # Get encrypted data and decrypt
-        encrypted_data = tensors["encrypted_data"]
+        encrypted_data = encrypted_data.tobytes()
         decrypted_data = self.decrypt_file(encrypted_data)
         
         # Write decrypted data to output file
@@ -200,7 +200,7 @@ def main():
             output_dir.mkdir(exist_ok=True)
             
             # Load metadata to get original filename
-            with safe_open(args.container, framework="numpy", mode="r") as f:
+            with safe_open(args.container, framework="numpy") as f:
                 metadata = f.metadata()
             original_filename = metadata["filename"]
             output_path = output_dir / f"recovered_{original_filename}"
