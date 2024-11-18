@@ -9,3 +9,7 @@ pip install volkoff
 ```
 
 And then run from anywhere with
+
+```bash
+vk
+```

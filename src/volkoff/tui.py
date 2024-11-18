@@ -7,7 +7,7 @@ from pathlib import Path
 
 def create_header() -> str:
     """Create the application header"""
-    return "\n[bold cyan]VolkoffH[/]\n[yellow]Encrypt files[/]"
+    return "\n[bold cyan]Volkoff[/]\n[yellow]Encrypt files[/]"
 
 
 def create_menu() -> str:
