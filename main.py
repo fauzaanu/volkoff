@@ -218,7 +218,6 @@ def main():
     parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
     parser.add_argument('--source', help='Source file path')
     parser.add_argument('--container', help='Container file path')
-    parser.add_argument('--output', help='Output file path for extraction')
     parser.add_argument('--key', help='Encryption key (required for extraction)')
     
     args = parser.parse_args()
@@ -243,13 +242,15 @@ def main():
                 print(f"\nFile hidden successfully in {container_paths[0]}")
             
         elif args.action == 'extract':
-            if not args.container or not args.output or not args.key:
-                parser.error("extract action requires --container, --output, and --key arguments")
+            if not args.container or not args.key:
+                parser.error("extract action requires --container and --key arguments")
             
+            # Extract original filename from metadata
             orion = OrionH(args.key)
             orion.generate_key()
-            orion.extract_file(args.container, args.output)
-            print(f"File extracted successfully to {args.output}")
+            output_path = f"recovered_{os.path.basename(args.container)}"
+            orion.extract_file(args.container, output_path)
+            print(f"File extracted successfully to {output_path}")
             
     except Exception as e:
         print(f"Error: {str(e)}", file=sys.stderr)

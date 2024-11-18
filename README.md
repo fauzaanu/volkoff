@@ -56,13 +56,13 @@ When hiding a file, the program will generate and display a secure encryption ke
 To extract a hidden file from a container, using your saved encryption key:
 
 ```bash
-python main.py extract --container <container_file> --output <output_file> --key <your-saved-key>
+python main.py extract --container <container_file> --key <your-saved-key>
 ```
 
 Example:
 ```bash
 # For single container:
-python main.py extract --container image.jpg --output recovered_secret.txt --key "YOUR-SAVED-ENCRYPTION-KEY"
+python main.py extract --container image.jpg --key "YOUR-SAVED-ENCRYPTION-KEY"
 
 # For split files, use the base container name - others will be found automatically:
 python main.py extract --container container_0.png --output recovered_secret.txt --key "YOUR-SAVED-ENCRYPTION-KEY"
