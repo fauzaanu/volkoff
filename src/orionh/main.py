@@ -270,32 +270,24 @@ def list_current_files():
 def main():
     console = Console()
 
-    try:
-        while True:
+    while True:
+        try:
             console.clear()
             layout = Layout()
-
-            # Add file listing section
-            files_panel = Panel(
-                "\n".join(f"📄 {f}" for f in list_current_files()),
-                title="[b]Files in Current Directory",
-                border_style="blue",
-            )
-
             layout.split_column(
                 Layout(create_header(), size=5),
                 Layout(create_menu(), size=10),
-                Layout(files_panel),
             )
             console.print(layout)
 
             # Get user choice
             choice = Prompt.ask("\nEnter your choice", choices=["h", "d", "q"], default="q").lower()
 
-            if choice.lower() == "q":
+            if choice == "q":
                 console.print("[yellow]Goodbye![/]")
                 return
 
+            # Show files only after choice is made
             files = list_current_files()
             if not files:
                 console.print(
@@ -307,40 +299,45 @@ def main():
                 time.sleep(2)
                 continue
 
-        console.print("\nAvailable files:")
-        for i, file in enumerate(files, 1):
-            console.print(f"{i}. {file}")
+            # Display file listing
+            console.print("\nAvailable files:")
+            for i, file in enumerate(files, 1):
+                console.print(f"{i}. {file}")
 
-            file_index = Prompt.ask("Enter file number", default="1")
+            # Get file selection
             try:
-                file_path = files[int(file_index) - 1]
+                file_index = int(Prompt.ask("Enter file number", default="1"))
+                file_path = files[file_index - 1]
                 if not Path(file_path).exists():
                     raise ValueError("File not found!")
             except (IndexError, ValueError) as e:
-                console.print(Panel(f"[bold red]{str(e)}![/]", border_style="red"))
+                console.print(Panel(f"[bold red]{str(e)}[/]", border_style="red"))
                 time.sleep(2)
                 continue
 
-        if choice.lower() == "h":  # Hide
-            success, key, output_path = process_file("hide", file_path)
-            display_result(success, key, output_path, console)
+            if choice == "h":  # Hide
+                success, key, output_path = process_file("hide", file_path)
+                display_result(success, key, output_path, console)
+            else:  # Decrypt/Extract
+                key = Prompt.ask("Enter encryption key")
+                success, error_msg, output_path = process_file("extract", file_path, key)
+                display_result(success, error_msg, output_path, console)
 
-        else:  # Decrypt/Extract
-            key = Prompt.ask("Enter encryption key")
-            success, error_msg, output_path = process_file("extract", file_path, key)
-            display_result(success, error_msg, output_path, console)
+            Prompt.ask("\nPress Enter to continue...")
 
-        Prompt.ask("\nPress Enter to continue...")
-
-    except Exception as e:
-        console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
-        time.sleep(2)
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Operation cancelled by user[/]")
+            time.sleep(1)
+            continue
+        except Exception as e:
+            console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
+            time.sleep(2)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
     except Exception as e:
         Console().print(f"\n[bold red]Fatal error:[/] {str(e)}")
