@@ -1,6 +1,6 @@
 from pathlib import Path
 
-def extract_file(orion, safetensors_path: str | Path, output_path: Path) -> None:
+def extract_file(Volkoff, safetensors_path: str | Path, output_path: Path) -> None:
     """Extract and decrypt hidden file"""
     # Load the stored data
     with open(safetensors_path, 'rb') as f:
@@ -13,11 +13,11 @@ def extract_file(orion, safetensors_path: str | Path, output_path: Path) -> None
     original_ext = original_ext.decode()
 
     # Verify the key matches
-    if stored_key != orion.private_key.to_string().hex():
+    if stored_key != Volkoff.private_key.to_string().hex():
         raise ValueError("Incorrect decryption key")
 
     # Decrypt the data
-    decrypted_data = orion.decrypt_file(encrypted_data)
+    decrypted_data = Volkoff.decrypt_file(encrypted_data)
 
     # Write decrypted data to output file
     with open(output_path, 'wb') as output:

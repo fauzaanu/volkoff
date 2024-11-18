@@ -1,11 +1,11 @@
 from pathlib import Path
 
-def hide_file(orion, source_path: str | Path, output_path: Path | None = None) -> Path:
+def hide_file(Volkoff, source_path: str | Path, output_path: Path | None = None) -> Path:
     """Hide encrypted file data"""
-    encrypted_data = orion.encrypt_file(source_path)
+    encrypted_data = Volkoff.encrypt_file(source_path)
 
-    # Create orion_output directory if it doesn't exist
-    output_dir = Path('orion_output')
+    # Create Volkoff directory if it doesn't exist
+    output_dir = Path('Volkoff')
     output_dir.mkdir(exist_ok=True)
 
     if output_path is None:
@@ -15,7 +15,7 @@ def hide_file(orion, source_path: str | Path, output_path: Path | None = None) -
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Store private key and original extension with encrypted data
-    private_key_hex = orion.private_key.to_string().hex()
+    private_key_hex = Volkoff.private_key.to_string().hex()
     original_ext = Path(source_path).suffix
     stored_data = f"{private_key_hex}###KEY###{original_ext}###EXT###".encode() + encrypted_data
 
