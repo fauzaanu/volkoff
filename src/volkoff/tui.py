@@ -30,6 +30,12 @@ def process_file(
     try:
         from volkoff.main import VolkoffH
 
+        # Validate encryption key for extract operation
+        if action == "extract" and not key:
+            return False, "Encryption key is required for extraction", None
+        elif action == "extract" and len(key) < 32:
+            return False, "Encryption key must be at least 32 characters long", None
+
         output_dir = Path("Volkoff")
         output_dir.mkdir(exist_ok=True)
 
@@ -87,3 +93,5 @@ def display_result(
             console.print(f"[yellow]Key:[/] [bold red]{message}[/]")
     else:
         console.print(f"\n[bold red]❌ Error:[/] {message}")
+        if "Incorrect decryption key" in message:
+            console.print("[yellow]Hint:[/] Make sure you're using the exact key that was provided during encryption")
