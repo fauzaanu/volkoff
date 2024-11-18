@@ -24,7 +24,7 @@ from ecdsa import SigningKey, SECP256k1
 class OrionH:
     """
     OrionH class for file encryption and hiding
-    
+
     Args:
         encryption_key (str, optional): The encryption key to use. If not provided,
             a new random key will be generated.
@@ -143,8 +143,7 @@ class OrionH:
         from orionh.extract import extract_file
         return extract_file(self, safetensors_path, output_path)
 
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
         description="OrionH - File encryption and hiding tool"
     )
@@ -185,3 +184,8 @@ if __name__ == "__main__":
         output_path = output_dir / f"recovered_{original_name}{original_ext}"
         orion.extract_file(args.input_file, output_path)
         print(f"File extracted successfully to {output_path}")
+
+
+if __name__ == "__main__":
+    main()
+
