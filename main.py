@@ -166,7 +166,7 @@ if __name__ == '__main__':
     parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
     parser.add_argument('--source', help='Source file path (for hide)')
     parser.add_argument('--file', help='Encrypted file path (for extract)')
-    parser.add_argument('--key', help='Encryption key (required for extraction)')
+    parser.add_argument('--key', type=str, help='Encryption key (required for extraction)')
 
     args = parser.parse_args()
 
