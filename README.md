@@ -54,13 +54,40 @@ Example:
 python main.py extract --container image.jpg --output recovered_secret.txt
 ```
 
-## Security Features
+## How It Works
+
+OrionH uses Bitcoin-style cryptography to secure your files. Here's the detailed process:
+
+### Key Generation
+1. Generates a private key using the SECP256k1 elliptic curve (the same one Bitcoin uses)
+2. Derives a public key from the private key using elliptic curve mathematics
+3. Creates a Bitcoin-style address from the public key using:
+   - SHA-256 hashing
+   - RIPEMD160 hashing
+   - Base58Check encoding
+
+### File Encryption Process
+1. When hiding a file:
+   - Reads the source file's contents
+   - Creates a SHA-256 hash of the file data
+   - Signs the hash with the private key using ECDSA
+   - Combines the original file data with the signature
+   - Appends the result to the container file with special markers
+
+2. When extracting a file:
+   - Locates the hidden data using the markers
+   - Separates the file data from the signature
+   - Verifies the signature using the public key
+   - If verification succeeds, recovers the original file
+
+### Security Features
 
 - Uses SECP256k1 elliptic curve (same as Bitcoin)
 - Implements SHA-256 and RIPEMD160 hashing
 - Base58Check encoding for addresses
 - Digital signatures for file authenticity
 - Secure key generation
+- Tamper-evident design: any modification to the hidden file will invalidate the signature
 
 ## Contributing
 
