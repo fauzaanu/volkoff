@@ -41,18 +41,22 @@ Example:
 python main.py hide --source secret.txt --container image.jpg
 ```
 
+When hiding a file, the program will generate and display a secure encryption key. **SAVE THIS KEY** in a password manager like Bitwarden - you will need it to decrypt your files later!
+
 ### Extracting a Hidden File
 
-To extract a hidden file from a container:
+To extract a hidden file from a container, using your saved encryption key:
 
 ```bash
-python main.py extract --container <container_file> --output <output_file>
+python main.py extract --container <container_file> --output <output_file> --key <your-saved-key>
 ```
 
 Example:
 ```bash
-python main.py extract --container image.jpg --output recovered_secret.txt
+python main.py extract --container image.jpg --output recovered_secret.txt --key "YOUR-SAVED-ENCRYPTION-KEY"
 ```
+
+IMPORTANT: There is NO WAY to recover your files if you lose the encryption key. Always store it securely in a password manager!
 
 ## How It Works
 
