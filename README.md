@@ -80,14 +80,39 @@ OrionH uses Bitcoin-style cryptography to secure your files. Here's the detailed
    - Verifies the signature using the public key
    - If verification succeeds, recovers the original file
 
-### Security Features
+### Security Features and Limitations
 
-- Uses SECP256k1 elliptic curve (same as Bitcoin)
-- Implements SHA-256 and RIPEMD160 hashing
-- Base58Check encoding for addresses
-- Digital signatures for file authenticity
-- Secure key generation
-- Tamper-evident design: any modification to the hidden file will invalidate the signature
+While OrionH implements strong cryptographic primitives, users should be aware of these security considerations:
+
+1. Key Management Vulnerabilities:
+   - Private keys are generated fresh each time the program runs
+   - Keys are not persisted between sessions
+   - No key backup mechanism exists
+   - Keys are held in memory during program execution
+
+2. Steganographic Weaknesses:
+   - The presence of hidden data is detectable due to obvious markers (###ORION###)
+   - The end of the container file can be easily examined to find hidden content
+   - No attempt to disguise the presence of hidden data
+
+3. Implementation Limitations:
+   - No encryption of the file contents (only signing)
+   - Raw file data is stored in plaintext
+   - Signature only proves authenticity, not confidentiality
+   - No protection against replay attacks
+
+4. Container File Vulnerabilities:
+   - Multiple writes to the same container file will append multiple copies
+   - No size limits on container files
+   - No validation of container file integrity
+
+For actual secure file storage, consider using:
+- Full disk encryption
+- Dedicated encryption tools like VeraCrypt
+- Proper key management systems
+- True steganographic techniques
+
+The current implementation is primarily educational and demonstrates Bitcoin-style cryptographic concepts.
 
 ## Contributing
 
