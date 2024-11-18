@@ -12,6 +12,7 @@ import argparse
 import hashlib
 from PIL import Image
 import numpy as np
+import math
 from pathlib import Path
 from ecdsa import SigningKey, SECP256k1
 import base58
@@ -113,7 +114,7 @@ class OrionH:
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
     
-    def _generate_default_container(self):
+    def _generate_default_container(self, index=None):
         """Generate a default container image"""
         # Create a random noise image
         img_size = (800, 600)
@@ -121,33 +122,93 @@ class OrionH:
         img = Image.fromarray(random_array)
         
         # Save to a temporary file
-        container_path = 'container.png'
+        container_path = f'container_{index}.png' if index is not None else 'container.png'
         img.save(container_path)
         return container_path
 
+    def _split_data(self, data, max_size=5*1024*1024):  # 5MB chunks
+        """Split data into chunks of maximum size"""
+        return [data[i:i + max_size] for i in range(0, len(data), max_size)]
+
     def hide_file(self, source_path, container_path=None):
-        """Hide encrypted file data inside another file"""
+        """Hide encrypted file data inside another file, splitting if necessary"""
         encrypted_data = self.encrypt_file(source_path)
+        chunks = self._split_data(encrypted_data)
+        total_chunks = len(chunks)
         
-        # Generate default container if none provided
-        if container_path is None:
-            container_path = self._generate_default_container()
-            print(f"Generated default container image: {container_path}")
+        container_paths = []
+        for i, chunk in enumerate(chunks):
+            # Generate or use container path
+            if container_path is None:
+                current_container = self._generate_default_container(i if total_chunks > 1 else None)
+                print(f"Generated container image {i+1}/{total_chunks}: {current_container}")
+            else:
+                base, ext = os.path.splitext(container_path)
+                current_container = f"{base}_{i}{ext}" if total_chunks > 1 else container_path
+            
+            container_paths.append(current_container)
+            
+            # Write chunk with metadata
+            with open(current_container, 'ab') as container:
+                container.write(b'\n###ORION###\n')
+                # Add chunk metadata
+                metadata = f"{i+1}/{total_chunks}".encode()
+                container.write(b'###META###' + metadata + b'###DATA###')
+                container.write(chunk)
         
-        with open(container_path, 'ab') as container:
-            container.write(b'\n###ORION###\n')
-            container.write(encrypted_data)
+        return container_paths
     
     def extract_file(self, container_path, output_path):
-        """Extract and decrypt hidden file"""
-        with open(container_path, 'rb') as container:
-            content = container.read()
+        """Extract and decrypt hidden file from one or more containers"""
+        # Check if we have multiple containers
+        base, ext = os.path.splitext(container_path)
+        all_data = []
+        chunk_count = 0
+        total_chunks = None
         
-        if b'###ORION###' not in content:
-            raise ValueError("No hidden content found")
-            
-        hidden_data = content.split(b'###ORION###')[1].strip()
-        decrypted_data = self.decrypt_file(hidden_data)
+        while True:
+            try:
+                current_path = f"{base}_{chunk_count}{ext}" if chunk_count > 0 else container_path
+                if not os.path.exists(current_path):
+                    if chunk_count == 0:
+                        raise ValueError(f"Container file not found: {current_path}")
+                    break
+                
+                with open(current_path, 'rb') as container:
+                    content = container.read()
+                
+                if b'###ORION###' not in content:
+                    raise ValueError(f"No hidden content found in {current_path}")
+                
+                # Extract chunk metadata and data
+                hidden_content = content.split(b'###ORION###')[1].strip()
+                if b'###META###' in hidden_content:
+                    meta, data = hidden_content.split(b'###DATA###')
+                    chunk_info = meta.split(b'###META###')[1].decode()
+                    current, total = map(int, chunk_info.split('/'))
+                    total_chunks = total
+                    all_data.append((current - 1, data))  # Store with index for proper ordering
+                else:
+                    # Single file case
+                    all_data.append((0, hidden_content))
+                    break
+                
+                chunk_count += 1
+                
+            except Exception as e:
+                if chunk_count == 0:
+                    raise e
+                break
+        
+        # Combine and decrypt data
+        if len(all_data) > 1:
+            # Sort by chunk index and combine
+            all_data.sort(key=lambda x: x[0])
+            combined_data = b''.join(chunk[1] for chunk in all_data)
+        else:
+            combined_data = all_data[0][1]
+        
+        decrypted_data = self.decrypt_file(combined_data)
         
         with open(output_path, 'wb') as output:
             output.write(decrypted_data)
@@ -173,8 +234,13 @@ def main():
             print("You will need it to decrypt your files later!")
             print(f"\nEncryption Key: {orion.encryption_key}\n")
             
-            orion.hide_file(args.source, args.container)
-            print(f"File hidden successfully in {args.container}")
+            container_paths = orion.hide_file(args.source, args.container)
+            if len(container_paths) > 1:
+                print(f"\nFile split and hidden across {len(container_paths)} containers:")
+                for path in container_paths:
+                    print(f"- {path}")
+            else:
+                print(f"\nFile hidden successfully in {container_paths[0]}")
             
         elif args.action == 'extract':
             if not args.container or not args.output or not args.key:

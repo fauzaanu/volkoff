@@ -30,7 +30,7 @@ OrionH provides two main operations: hiding files and extracting hidden files.
 
 ### Hiding a File
 
-To hide a file within a container file:
+To hide a file within a container file. For large files (>5MB), the tool automatically splits the content across multiple container files:
 
 ```bash
 python main.py hide --source <source_file> [--container <container_file>]
@@ -40,8 +40,13 @@ Example:
 ```bash
 python main.py hide --source secret.txt --container image.jpg
 
-# Or let it generate a container image automatically:
+# Or let it generate container image(s) automatically:
 python main.py hide --source secret.txt
+
+# For large files, multiple containers will be generated:
+# - container_0.png
+# - container_1.png
+# - etc.
 ```
 
 When hiding a file, the program will generate and display a secure encryption key. **SAVE THIS KEY** in a password manager like Bitwarden - you will need it to decrypt your files later!
@@ -56,7 +61,11 @@ python main.py extract --container <container_file> --output <output_file> --key
 
 Example:
 ```bash
+# For single container:
 python main.py extract --container image.jpg --output recovered_secret.txt --key "YOUR-SAVED-ENCRYPTION-KEY"
+
+# For split files, use the base container name - others will be found automatically:
+python main.py extract --container container_0.png --output recovered_secret.txt --key "YOUR-SAVED-ENCRYPTION-KEY"
 ```
 
 IMPORTANT: There is NO WAY to recover your files if you lose the encryption key. Always store it securely in a password manager!
