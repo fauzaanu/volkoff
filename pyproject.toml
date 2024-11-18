@@ -11,15 +11,15 @@ allow-direct-references = true
 [tool.hatch.packages.find]
 where = ["src"]
 include = ["volkoff*"]
-dependencies = [
-    "base58>=2.1.1",
-    "cryptography>=43.0.3",
-    "ecdsa>=0.19.0",
-    "keyboard>=0.13.5",
-    "pytest>=8.3.3",
-    "questionary>=1.10.0",
-    "rich>=13.9.4",
-]
+
+[project.dependencies]
+base58 = ">=2.1.1"
+cryptography = ">=43.0.3"
+ecdsa = ">=0.19.0"
+keyboard = ">=0.13.5"
+pytest = ">=8.3.3"
+questionary = ">=1.10.0"
+rich = ">=13.9.4"
 
 [tool.uv]
 dev-dependencies = [
