@@ -177,32 +177,43 @@ def main():
                 if choice == "q":
                     console.print("[yellow]Goodbye![/]")
                     return
-                files = list_current_files()
-                if not files:
-                    console.print(
-                        Panel(
-                            "[bold red]No files found in current directory![/]",
-                            border_style="red",
-                        )
-                    )
-                    time.sleep(2)
+                current_dir = Path(".")
+                while True:
+                    files, dirs, current_path = list_current_files(current_dir)
+                    listing = format_directory_listing(files, dirs, current_path)
+                    console.print(listing)
+
+                    if not files and not dirs:
+                        console.print("\n[bold red]No files found in this directory![/]")
+                        time.sleep(2)
+                        break
+
+                    try:
+                        file_index = int(Prompt.ask("\nEnter number", default="1"))
+                        
+                        # Handle parent directory
+                        if file_index == 0 and current_path != current_path.root:
+                            current_dir = current_dir.parent
+                            continue
+                            
+                        # Handle directory selection
+                        if file_index <= len(dirs):
+                            current_dir = dirs[file_index - 1]
+                            continue
+                            
+                        # Handle file selection
+                        if file_index <= len(dirs) + len(files):
+                            file_path = files[file_index - len(dirs) - 1]
+                            break
+                            
+                        raise ValueError("Invalid selection!")
+                    except ValueError as e:
+                        console.print(f"[bold red]Error:[/] {str(e)}")
+                        time.sleep(1)
+                        continue
+
+                if not files and not dirs:
                     continue
-
-                # Display file listing in a compact table
-                file_table = Table(show_header=False, box=box.SIMPLE)
-                file_table.add_column("Number", style="cyan")
-                file_table.add_column("Filename")
-                for i, file in enumerate(files, 1):
-                    file_table.add_row(str(i), file)
-                console.print("\nAvailable files:")
-                console.print(file_table)
-
-                # Get file selection
-                try:
-                    file_index = int(Prompt.ask("Enter file number", default="1"))
-                    file_path = files[file_index - 1]
-                    if not Path(file_path).exists():
-                        raise ValueError("File not found!")
                 except (IndexError, ValueError) as e:
                     console.print(Panel(f"[bold red]{str(e)}[/]", border_style="red"))
                     time.sleep(2)
