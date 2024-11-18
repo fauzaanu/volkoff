@@ -3,7 +3,6 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 from rich.text import Text
-from rich.layout import Layout
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.align import Align
 import os
