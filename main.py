@@ -140,9 +140,13 @@ class OrionH:
             "encrypted_data": encrypted_data
         }
         
+        # Create output directory if it doesn't exist
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
         # Save to safetensors file
-        with safe_open(output_path, framework="numpy") as f:
-            f.store_tensor("encrypted_data", encrypted_data.tobytes())
+        tensors = {"encrypted_data": encrypted_data}
+        with safe_open(output_path, framework="numpy", mode="w") as f:
+            f.store_tensor("encrypted_data", encrypted_data)
             f.write_metadata(metadata)
         
         return output_path
@@ -159,7 +163,7 @@ class OrionH:
         self.public_key = self.private_key.get_verifying_key()
         
         # Get encrypted data and decrypt
-        encrypted_data = encrypted_data.tobytes()
+        encrypted_data = tensors["encrypted_data"]
         decrypted_data = self.decrypt_file(encrypted_data)
         
         # Write decrypted data to output file
