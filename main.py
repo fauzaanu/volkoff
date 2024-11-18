@@ -163,18 +163,15 @@ class OrionH:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OrionH - File encryption and hiding tool')
-    subparsers = parser.add_subparsers(dest='action', required=True)
-    
-    # Hide command
-    hide_parser = subparsers.add_parser('hide', help='Hide and encrypt a file')
-    hide_parser.add_argument('--source', required=True, help='Source file path')
-    
-    # Extract command
-    extract_parser = subparsers.add_parser('extract', help='Extract and decrypt a file')
-    extract_parser.add_argument('--file', required=True, help='Encrypted file path')
-    extract_parser.add_argument('key', help='Encryption key')
+    parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
+    parser.add_argument('input_file', help='Source file for hide, encrypted file for extract')
+    parser.add_argument('key', nargs='?', help='Encryption key (only needed for extract)')
 
     args = parser.parse_args()
+
+    # Create output directory
+    output_dir = Path('orion_output')
+    output_dir.mkdir(exist_ok=True)
 
     if args.action == 'hide':
         orion = OrionH()
@@ -183,19 +180,14 @@ if __name__ == '__main__':
         print("You will need it to decrypt your files later!")
         print(f"\nEncryption Key: {orion.encryption_key}\n")
 
-        output_path = orion.hide_file(args.source)
+        output_path = orion.hide_file(args.input_file)
         print(f"\nFile hidden successfully in {output_path}")
 
     elif args.action == 'extract':
-
+        if not args.key:
+            parser.error("extract action requires an encryption key")
+            
         orion = OrionH(args.key)
-
-        # Create orion_output directory if it doesn't exist
-        output_dir = Path('orion_output')
-        output_dir.mkdir(exist_ok=True)
-
-        # Use a default filename for recovered files
-        original_filename = "recovered_file"
-        output_path = output_dir / f"recovered_{original_filename}"
-        orion.extract_file(args.file, output_path)
+        output_path = output_dir / f"recovered_{Path(args.input_file).stem}"
+        orion.extract_file(args.input_file, output_path)
         print(f"File extracted successfully to {output_path}")
