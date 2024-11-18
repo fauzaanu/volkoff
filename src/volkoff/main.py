@@ -1,15 +1,9 @@
-import base64
+import os
 import time
+from pathlib import Path
 from rich.console import Console
 from rich.prompt import Prompt
-import hashlib
-import os
-from pathlib import Path
-
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from ecdsa import SigningKey, SECP256k1
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from .tui import (
     list_current_files,
@@ -23,126 +17,53 @@ from .tui import (
 
 class VolkoffH:
     """
-    VolkoffH class for file encryption and hiding
-
+    VolkoffH class for file encryption and hiding using AES-GCM
+    
     Args:
-        encryption_key (str, optional): The encryption key to use. If not provided,
+        encryption_key (str, optional): The 32-byte hex key to use. If not provided,
             a new random key will be generated.
     """
-
+    
     def __init__(self, encryption_key: str | None = None):
         if encryption_key:
-            # For extraction: use provided key with same hashing as encryption
-            self.encryption_key = encryption_key
-            # Apply same double-hashing as in encryption
-            key_bytes = hashlib.sha512(encryption_key.encode()).digest()
-            key_bytes = hashlib.sha256(key_bytes).digest()
-            self.private_key = SigningKey.from_string(key_bytes, curve=SECP256k1)
-            self.public_key = self.private_key.get_verifying_key()
+            # For extraction: use provided key
+            try:
+                self.key = bytes.fromhex(encryption_key)
+                if len(self.key) != 32:
+                    raise ValueError("Key must be 32 bytes (64 hex characters)")
+            except ValueError as e:
+                raise ValueError(f"Invalid key format: {str(e)}")
         else:
-            # For hiding: generate new random key with extreme security measures
-            # Combine multiple entropy sources
-            system_entropy = os.urandom(64)
-            time_entropy = str(time.time_ns()).encode()
-            process_entropy = str(os.getpid()).encode()
-
-            # Create a complex mixing function
-            mixed = hashlib.sha512(system_entropy).digest()
-            mixed = hashlib.sha512(mixed + time_entropy).digest()
-            mixed = hashlib.sha512(mixed + process_entropy).digest()
-
-            # Generate a 64-character key using multiple character sets
-            charsets = [
-                "abcdefghijklmnopqrstuvwxyz",  # lowercase
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ",  # uppercase
-                "0123456789",                   # numbers
-                "!@#$%^&*()=+[]{}|;:,.<>?"     # special chars
-            ]
+            # For hiding: generate new random 32-byte key
+            self.key = os.urandom(32)
+            self.encryption_key = self.key.hex()
             
-            # Ensure at least one char from each set
-            key_chars = []
-            for charset in charsets:
-                while True:
-                    value = int.from_bytes(os.urandom(4), "big")
-                    if value < (2**32 - (2**32 % len(charset))):
-                        key_chars.append(charset[value % len(charset)])
-                        break
+        self.aesgcm = AESGCM(self.key)
             
-            # Fill remaining positions with mixed chars
-            combined_charset = "".join(charsets)
-            while len(key_chars) < 64:
-                # Get fresh entropy for each character
-                value = int.from_bytes(os.urandom(4), "big")
-                if value < (2**32 - (2**32 % len(combined_charset))):
-                    key_chars.append(combined_charset[value % len(combined_charset)])
-            
-            # Shuffle the characters
-            for i in range(len(key_chars)-1, 0, -1):
-                # Fisher-Yates shuffle with crypto random
-                j = int.from_bytes(os.urandom(4), "big") % (i + 1)
-                key_chars[i], key_chars[j] = key_chars[j], key_chars[i]
-
-            self.encryption_key = "".join(key_chars)
-            # Double hash the key for extra security
-            key_bytes = hashlib.sha512(self.encryption_key.encode()).digest()
-            key_bytes = hashlib.sha256(key_bytes).digest()
-            self.private_key = SigningKey.from_string(key_bytes, curve=SECP256k1)
-            self.public_key = self.private_key.get_verifying_key()
-
-    def generate_key(self):
-        """Generate a Bitcoin-style private key using SECP256k1"""
-        self.private_key = SigningKey.generate(curve=SECP256k1)
-        self.public_key = self.private_key.get_verifying_key()
-        return self.private_key.to_string().hex()
-
-    def _derive_key(self, salt=None):
-        """Derive an encryption key using the stored encryption key"""
-        if not self.encryption_key:
-            raise ValueError("No encryption key set")
-
-        if salt is None:
-            salt = os.urandom(16)
-
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=1000000,  # Increased iterations for stronger key derivation
-        )
-
-        key = base64.urlsafe_b64encode(kdf.derive(self.encryption_key.encode()))
-        return key, salt
-
     def encrypt_file(self, file_path):
-        """Encrypt a file using AES"""
-        if not self.private_key:
-            raise ValueError("No private key set")
-
+        """Encrypt a file using AES-GCM"""
         with open(file_path, "rb") as file:
             file_data = file.read()
-
-        # Generate encryption key and encrypt data
-        key, salt = self._derive_key()
-        f = Fernet(key)
-        encrypted_data = f.encrypt(file_data)
-
-        # Combine encrypted data with salt
-        return encrypted_data + b"###SALT###" + salt
-
+            
+        # Generate nonce
+        nonce = os.urandom(12)
+        
+        # Encrypt data with authenticated encryption
+        encrypted_data = self.aesgcm.encrypt(nonce, file_data, None)
+        
+        # Combine nonce and encrypted data
+        return nonce + encrypted_data
+        
     def decrypt_file(self, encrypted_data):
-        """Decrypt file"""
-        if not self.public_key:
-            raise ValueError("No public key set")
-
+        """Decrypt file using AES-GCM"""
         try:
-            # Split components
-            encrypted_content, salt = encrypted_data.split(b"###SALT###")
-
-            # Decrypt data
-            key, _ = self._derive_key(salt)
-            f = Fernet(key)
-            decrypted_data = f.decrypt(encrypted_content)
-
+            # Split nonce and ciphertext
+            nonce = encrypted_data[:12]
+            ciphertext = encrypted_data[12:]
+            
+            # Decrypt and authenticate data
+            decrypted_data = self.aesgcm.decrypt(nonce, ciphertext, None)
+            
             return decrypted_data
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")

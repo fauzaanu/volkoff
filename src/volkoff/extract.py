@@ -12,9 +12,7 @@ def extract_file(Volkoff, safetensors_path: str | Path, output_path: Path) -> No
     stored_key = stored_key.decode()
     original_ext = original_ext.decode()
 
-    # Verify the key matches
-    if stored_key != Volkoff.private_key.to_string().hex():
-        raise ValueError("Incorrect decryption key")
+    # Key verification happens automatically during decryption
 
     # Decrypt the data
     decrypted_data = Volkoff.decrypt_file(encrypted_data)
