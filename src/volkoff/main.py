@@ -58,7 +58,7 @@ class VolkoffH:
             key_chars = []
             for i in range(64):
                 # Use 6 bytes of entropy per character to avoid modulo bias
-                index = int.from_bytes(mixed[i*6:(i+1)*6], 'big')
+                index = int.from_bytes(mixed[i * 6 : (i + 1) * 6], "big")
                 key_chars.append(charset[index % len(charset)])
 
             self.encryption_key = "".join(key_chars)
@@ -146,7 +146,6 @@ class VolkoffH:
         from volkoff.extract import extract_file
 
         return extract_file(self, safetensors_path, output_path)
-
 
 
 def main():
