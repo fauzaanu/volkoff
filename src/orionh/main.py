@@ -2,13 +2,8 @@ import base64
 import time
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
-from rich.layout import Layout
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.prompt import Prompt
 from rich import box
-from rich.align import Align
 import hashlib
 import os
 from pathlib import Path
@@ -18,7 +13,13 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
 
-from orionh.tui import list_current_files, create_menu, create_header
+from orionh.tui import (
+    list_current_files,
+    create_menu,
+    create_header,
+    process_file,
+    display_result,
+)
 
 
 class OrionH:
@@ -126,87 +127,6 @@ class OrionH:
 
         return extract_file(self, safetensors_path, output_path)
 
-
-def process_file(
-    action: str, file_path: str | Path, key: str | None = None
-) -> tuple[bool, str, Path | None]:
-    """Process file with progress animation"""
-    try:
-        output_dir = Path("orion_output")
-        output_dir.mkdir(exist_ok=True)
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            console=Console(),
-        ) as progress:
-            if action == "hide":
-                orion = OrionH()
-                task = progress.add_task("[cyan]Encrypting...", total=100)
-                for i in range(100):
-                    progress.update(task, advance=1)
-                    time.sleep(0.02)
-                output_path = orion.hide_file(file_path)
-                return True, orion.encryption_key, output_path
-
-            else:  # extract
-                if not key:
-                    return False, "No encryption key provided", None
-
-                orion = OrionH(key)
-                task = progress.add_task("[cyan]Decrypting...", total=100)
-
-                with open(file_path, "rb") as f:
-                    stored_data = f.read()
-                _, rest = stored_data.split(b"###KEY###", 1)
-                original_ext, _ = rest.split(b"###EXT###", 1)
-                original_ext = original_ext.decode()
-
-                original_name = Path(file_path).stem
-                output_path = output_dir / f"recovered_{original_name}{original_ext}"
-
-                for i in range(100):
-                    progress.update(task, advance=1)
-                    time.sleep(0.02)
-
-                orion.extract_file(file_path, output_path)
-                return True, "", output_path
-
-    except Exception as e:
-        return False, str(e), None
-
-
-def display_result(
-    success: bool, message: str, output_path: Path | None, console: Console
-) -> None:
-    """Display the operation result"""
-    if success:
-        result_panel = Panel(
-            Align.center(
-                Text.from_markup(
-                    f"[bold green]Operation Successful![/]\n\n"
-                    f"[blue]Output:[/] {output_path}\n\n"
-                    + (
-                        f"[yellow]Encryption Key:[/] [bold red]{message}[/]\n"
-                        if message
-                        else ""
-                    )
-                )
-            ),
-            title="[bold green]✅ Success",
-            border_style="green",
-            box=box.DOUBLE,
-        )
-    else:
-        result_panel = Panel(
-            f"[bold red]Error:[/] {message}",
-            title="[bold red]❌ Failed",
-            border_style="red",
-            box=box.DOUBLE,
-        )
-    console.print(result_panel)
 
 
 def main():
