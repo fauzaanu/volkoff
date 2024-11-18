@@ -1,44 +1,44 @@
 # Volkoff
 
-Volkoff helps you lock and unlock your files. It's like a safe for your computer files!
+A secure file encryption tool using AES-256-GCM encryption.
 
-To get Volkoff, type this:
+Installation:
 ```bash
 pip install volkoff
 ```
 
-To start it, just type:
+Launch with:
 ```bash
 vk
 ```
 
-## How It Works
+## Implementation Details
 
-When you lock a file:
-1. Volkoff makes a special key just for you using strong AES-256 encryption
-2. It puts your file in a special container that keeps:
-   - The type of file (like .jpg or .pdf)
-   - The file's contents
-   - A unique number that makes each lock different
-3. It locks everything up with your key
-4. It gives you the key to save
+Encryption Process:
+1. Generates a 256-bit AES key for secure encryption
+2. Creates a container format that includes:
+   - File extension metadata
+   - Original file contents
+   - Unique 12-byte nonce for each encryption
+3. Encrypts the entire container using AES-256-GCM
+4. Returns the encryption key for secure storage
 
-When you want to unlock it:
-1. You give Volkoff your key
-2. It checks if the key is right
-3. It opens the container and gets:
-   - The original file type
-   - Your file's contents
-4. It puts your file back together, exactly like it was before
+Decryption Process:
+1. Validates the provided encryption key
+2. Extracts the nonce from the encrypted container
+3. Decrypts the container to retrieve:
+   - Original file extension
+   - File contents
+4. Reconstructs the file with original metadata
 
-## What Makes It Safe
+## Security Features
 
-- Uses AES-256 encryption (the same kind banks use)
-- Each file gets a fresh random number when locked
-- The container keeps your file type and data together safely
-- No one can change the locked file without the right key
+- AES-256-GCM authenticated encryption
+- Unique nonce generation per file
+- Secure container format preserving file metadata
+- Authentication to prevent tampering
 
-Remember:
-- Keep your key safe! Without it, you can't unlock your files
-- Write down your key somewhere safe
-- Test unlocking right after you lock something important
+Important Security Notes:
+- Store encryption keys securely - they cannot be recovered
+- Maintain secure backups of encryption keys
+- Verify successful decryption after encrypting critical files
