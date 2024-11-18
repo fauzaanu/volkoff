@@ -31,7 +31,6 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
 
 
-
 class OrionH:
     """
     OrionH class for file encryption and hiding
@@ -40,6 +39,7 @@ class OrionH:
         encryption_key (str, optional): The encryption key to use. If not provided,
             a new random key will be generated.
     """
+
     def __init__(self, encryption_key: str | None = None):
         if encryption_key:
             # For extraction: use provided key
@@ -146,13 +146,18 @@ class OrionH:
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
 
-    def hide_file(self, source_path: str | Path, output_path: Path | None = None) -> Path:
+    def hide_file(
+        self, source_path: str | Path, output_path: Path | None = None
+    ) -> Path:
         from orionh.hide import hide_file
+
         return hide_file(self, source_path, output_path)
 
     def extract_file(self, safetensors_path: str | Path, output_path: Path) -> None:
         from orionh.extract import extract_file
+
         return extract_file(self, safetensors_path, output_path)
+
 
 def create_header() -> Panel:
     """Create the application header"""
@@ -162,6 +167,7 @@ def create_header() -> Panel:
     grid.add_row("[yellow]Secure File Encryption & Hiding Tool[/yellow]")
     grid.add_row("[dim]Inspired by Charles Buttowski's Father - ORION[/dim]")
     return Panel(grid, box=box.DOUBLE)
+
 
 def create_menu() -> Panel:
     """Create the main menu panel"""
@@ -173,12 +179,15 @@ def create_menu() -> Panel:
     menu_text = "\n".join(menu_items)
     return Panel(menu_text, title="[b]Menu", border_style="green")
 
-def process_file(action: str, file_path: str | Path, key: str | None = None) -> tuple[bool, str, Path | None]:
+
+def process_file(
+    action: str, file_path: str | Path, key: str | None = None
+) -> tuple[bool, str, Path | None]:
     """Process file with progress animation"""
     try:
         output_dir = Path("orion_output")
         output_dir.mkdir(exist_ok=True)
-        
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -186,7 +195,6 @@ def process_file(action: str, file_path: str | Path, key: str | None = None) -> 
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             console=Console(),
         ) as progress:
-            
             if action == "hide":
                 orion = OrionH()
                 task = progress.add_task("[cyan]Encrypting...", total=100)
@@ -195,34 +203,37 @@ def process_file(action: str, file_path: str | Path, key: str | None = None) -> 
                     time.sleep(0.02)
                 output_path = orion.hide_file(file_path)
                 return True, orion.encryption_key, output_path
-                
+
             else:  # extract
                 if not key:
                     return False, "No encryption key provided", None
-                    
+
                 orion = OrionH(key)
                 task = progress.add_task("[cyan]Decrypting...", total=100)
-                
+
                 with open(file_path, "rb") as f:
                     stored_data = f.read()
                 _, rest = stored_data.split(b"###KEY###", 1)
                 original_ext, _ = rest.split(b"###EXT###", 1)
                 original_ext = original_ext.decode()
-                
+
                 original_name = Path(file_path).stem
                 output_path = output_dir / f"recovered_{original_name}{original_ext}"
-                
+
                 for i in range(100):
                     progress.update(task, advance=1)
                     time.sleep(0.02)
-                    
+
                 orion.extract_file(file_path, output_path)
                 return True, "", output_path
-                
+
     except Exception as e:
         return False, str(e), None
 
-def display_result(success: bool, message: str, output_path: Path | None, console: Console) -> None:
+
+def display_result(
+    success: bool, message: str, output_path: Path | None, console: Console
+) -> None:
     """Display the operation result"""
     if success:
         result_panel = Panel(
@@ -230,96 +241,107 @@ def display_result(success: bool, message: str, output_path: Path | None, consol
                 Text.from_markup(
                     f"[bold green]Operation Successful![/]\n\n"
                     f"[blue]Output:[/] {output_path}\n\n"
-                    + (f"[yellow]Encryption Key:[/] [bold red]{message}[/]\n" if message else "")
+                    + (
+                        f"[yellow]Encryption Key:[/] [bold red]{message}[/]\n"
+                        if message
+                        else ""
+                    )
                 )
             ),
             title="[bold green]✅ Success",
             border_style="green",
-            box=box.DOUBLE
+            box=box.DOUBLE,
         )
     else:
         result_panel = Panel(
             f"[bold red]Error:[/] {message}",
             title="[bold red]❌ Failed",
             border_style="red",
-            box=box.DOUBLE
+            box=box.DOUBLE,
         )
     console.print(result_panel)
+
 
 def list_current_files():
     """List all files in the current directory"""
     files = glob.glob("*")
     return [f for f in files if os.path.isfile(f)]
 
+
 def main():
     console = Console()
-    
+
     try:
         while True:
             console.clear()
             layout = Layout()
-        
-        # Add file listing section
-        files_panel = Panel(
-            "\n".join(f"📄 {f}" for f in list_current_files()),
-            title="[b]Files in Current Directory",
-            border_style="blue"
-        )
-        
-        layout.split_column(
-            Layout(create_header(), size=5),
-            Layout(create_menu(), size=10),
-            Layout(files_panel)
-        )
-        console.print(layout)
-        
-        console.print("\nPress H to hide, D to decrypt/extract, or Q to quit...")
-        
-        # Get user choice
-        while True:
-            if keyboard.is_pressed('h'):
-                choice = 'h'
-                break
-            elif keyboard.is_pressed('d'):
-                choice = 'd'
-                break
-            elif keyboard.is_pressed('q'):
-                choice = 'q'
-                break
-        
-        if choice.lower() == "q":
-            console.print("[yellow]Goodbye![/]")
-            return
-            
-        files = list_current_files()
-        if not files:
-            console.print(Panel("[bold red]No files found in current directory![/]", border_style="red"))
-            time.sleep(2)
-            continue
-            
+
+            # Add file listing section
+            files_panel = Panel(
+                "\n".join(f"📄 {f}" for f in list_current_files()),
+                title="[b]Files in Current Directory",
+                border_style="blue",
+            )
+
+            layout.split_column(
+                Layout(create_header(), size=5),
+                Layout(create_menu(), size=10),
+                Layout(files_panel),
+            )
+            console.print(layout)
+
+            console.print("\nPress H to hide, D to decrypt/extract, or Q to quit...")
+
+            # Get user choice
+            while True:
+                if keyboard.is_pressed("h"):
+                    choice = "h"
+                    break
+                elif keyboard.is_pressed("d"):
+                    choice = "d"
+                    break
+                elif keyboard.is_pressed("q"):
+                    choice = "q"
+                    break
+
+            if choice.lower() == "q":
+                console.print("[yellow]Goodbye![/]")
+                return
+
+            files = list_current_files()
+            if not files:
+                console.print(
+                    Panel(
+                        "[bold red]No files found in current directory![/]",
+                        border_style="red",
+                    )
+                )
+                time.sleep(2)
+                continue
+
         console.print("\nAvailable files:")
         for i, file in enumerate(files, 1):
             console.print(f"{i}. {file}")
-        
-        file_index = Prompt.ask("Enter file number", default="1")
-        try:
-            file_path = files[int(file_index) - 1]
-            if not Path(file_path).exists():
-                raise ValueError("File not found!")
-        except (IndexError, ValueError) as e:
-            console.print(Panel(f"[bold red]{str(e)}![/]", border_style="red"))
-            time.sleep(2)
-            continue
-            
+
+            file_index = Prompt.ask("Enter file number", default="1")
+            try:
+                file_path = files[int(file_index) - 1]
+                if not Path(file_path).exists():
+                    raise ValueError("File not found!")
+            except (IndexError, ValueError) as e:
+                console.print(Panel(f"[bold red]{str(e)}![/]", border_style="red"))
+                time.sleep(2)
+                continue
+
         if choice.lower() == "h":  # Hide
             success, key, output_path = process_file("hide", file_path)
             display_result(success, key, output_path, console)
-            
+
         else:  # Decrypt/Extract
             key = Prompt.ask("Enter encryption key")
             success, error_msg, output_path = process_file("extract", file_path, key)
             display_result(success, error_msg, output_path, console)
-            
+
         Prompt.ask("\nPress Enter to continue...")
 
     except Exception as e:
@@ -334,4 +356,3 @@ if __name__ == "__main__":
         Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
     except Exception as e:
         Console().print(f"\n[bold red]Fatal error:[/] {str(e)}")
-
