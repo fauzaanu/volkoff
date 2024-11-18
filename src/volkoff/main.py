@@ -33,24 +33,6 @@ class VolkoffH:
                     raise ValueError("Key must be 32 bytes (64 hex characters)")
             except ValueError as e:
                 raise ValueError(f"Invalid key format: {str(e)}")
-        else:
-            # For hiding: generate new random keys
-            self.key = os.urandom(32)  # Main encryption key
-            self.key_encryption_key = os.urandom(32)  # Key to encrypt the private key
-            self.encryption_key = self.key.hex()
-            
-            # Create AESGCM instance for key encryption
-            self.key_aesgcm = AESGCM(self.key_encryption_key)
-            
-    def __init__(self, encryption_key: str | None = None):
-        if encryption_key:
-            # For extraction: use provided key
-            try:
-                self.key = bytes.fromhex(encryption_key)
-                if len(self.key) != 32:
-                    raise ValueError("Key must be 32 bytes (64 hex characters)")
-            except ValueError as e:
-                raise ValueError(f"Invalid key format: {str(e)}")
             self.aesgcm = AESGCM(self.key)
         else:
             # For hiding: generate new random keys

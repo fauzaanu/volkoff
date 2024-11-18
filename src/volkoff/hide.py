@@ -2,8 +2,6 @@ from pathlib import Path
 
 def hide_file(Volkoff, source_path: str | Path, output_path: Path | None = None) -> Path:
     """Hide encrypted file data"""
-    encrypted_data = Volkoff.encrypt_file(source_path)
-
     # Create Volkoff directory if it doesn't exist
     output_dir = Path('Volkoff')
     output_dir.mkdir(exist_ok=True)
