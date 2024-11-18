@@ -51,24 +51,36 @@ class VolkoffH:
             mixed = hashlib.sha512(mixed + time_entropy).digest()
             mixed = hashlib.sha512(mixed + process_entropy).digest()
 
-            # Generate a 64-character key using a balanced character set
-            charset = (
-                "abcdefghijklmnopqrstuvwxyz"  # lowercase
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # uppercase
-                "0123456789"                   # numbers
-                "!@#$%^&*()=+[]{}|;:,.<>?"  # special chars
-            )
+            # Generate a 64-character key using multiple character sets
+            charsets = [
+                "abcdefghijklmnopqrstuvwxyz",  # lowercase
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ",  # uppercase
+                "0123456789",                   # numbers
+                "!@#$%^&*()=+[]{}|;:,.<>?"     # special chars
+            ]
+            
+            # Ensure at least one char from each set
             key_chars = []
-            for i in range(64):
-                # Use rejection sampling to avoid modulo bias
+            for charset in charsets:
                 while True:
-                    # Use 4 bytes (32 bits) of entropy per attempt
-                    value = int.from_bytes(mixed[i * 4 : (i * 4) + 4], "big")
-                    index = value % len(charset)
-                    # Only accept if the value would give an unbiased result
-                    if value - index <= (2**32 - len(charset)):
-                        key_chars.append(charset[index])
+                    value = int.from_bytes(os.urandom(4), "big")
+                    if value < (2**32 - (2**32 % len(charset))):
+                        key_chars.append(charset[value % len(charset)])
                         break
+            
+            # Fill remaining positions with mixed chars
+            combined_charset = "".join(charsets)
+            while len(key_chars) < 64:
+                # Get fresh entropy for each character
+                value = int.from_bytes(os.urandom(4), "big")
+                if value < (2**32 - (2**32 % len(combined_charset))):
+                    key_chars.append(combined_charset[value % len(combined_charset)])
+            
+            # Shuffle the characters
+            for i in range(len(key_chars)-1, 0, -1):
+                # Fisher-Yates shuffle with crypto random
+                j = int.from_bytes(os.urandom(4), "big") % (i + 1)
+                key_chars[i], key_chars[j] = key_chars[j], key_chars[i]
 
             self.encryption_key = "".join(key_chars)
             # Double hash the key for extra security
