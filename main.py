@@ -177,7 +177,16 @@ class OrionH:
 
         while True:
             try:
-                current_path = f"{base}_{chunk_count}{ext}" if chunk_count > 0 else container_path
+                # Handle paths for chunked files
+                container_dir = os.path.dirname(container_path)
+                container_name = os.path.basename(container_path)
+                base, ext = os.path.splitext(container_name)
+                
+                # Remove any existing _0 suffix for the first file
+                if base.endswith('_0'):
+                    base = base[:-2]
+                
+                current_path = os.path.join(container_dir, f"{base}_{chunk_count}{ext}" if chunk_count > 0 else f"{base}_0{ext}")
                 if not os.path.exists(current_path):
                     if chunk_count == 0:
                         raise ValueError(f"Container file not found: {current_path}")
