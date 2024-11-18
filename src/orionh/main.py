@@ -1,12 +1,3 @@
-"""
-Author: Fauzaan Gasim
-
-OriginH is an encryption + hiding files tool.
-The name is inspired by Charles Buttowski's Father whose code name is ORION.
-
-This tool will implement an encryption that is impossible to break inspired by the bitcoin secret key design
-"""
-
 import base64
 import time
 from rich.console import Console
@@ -20,14 +11,14 @@ from rich import box
 from rich.align import Align
 import hashlib
 import os
-import glob
 from pathlib import Path
 
-import base58
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
+
+from orionh.tui import list_current_files, create_menu, create_header
 
 
 class OrionH:
@@ -61,28 +52,6 @@ class OrionH:
         self.private_key = SigningKey.generate(curve=SECP256k1)
         self.public_key = self.private_key.get_verifying_key()
         return self.private_key.to_string().hex()
-
-    def get_address(self):
-        """Generate a Bitcoin-style address from the public key"""
-        public_key_bytes = self.public_key.to_string()
-        sha256_hash = hashlib.sha256(public_key_bytes).digest()
-        ripemd160_hash = hashlib.new("ripemd160", sha256_hash).digest()
-
-        # Add version byte (0x00 for mainnet)
-        version_ripemd160_hash = b"\x00" + ripemd160_hash
-
-        # Double SHA256 for checksum
-        double_sha256 = hashlib.sha256(
-            hashlib.sha256(version_ripemd160_hash).digest()
-        ).digest()
-        checksum = double_sha256[:4]
-
-        # Combine version, hash, and checksum
-        binary_address = version_ripemd160_hash + checksum
-
-        # Convert to Base58Check encoding
-        address = base58.b58encode(binary_address).decode("utf-8")
-        return address
 
     def _derive_key(self, salt=None):
         """Derive an encryption key using the stored encryption key"""
@@ -156,27 +125,6 @@ class OrionH:
         from orionh.extract import extract_file
 
         return extract_file(self, safetensors_path, output_path)
-
-
-def create_header() -> Panel:
-    """Create the application header"""
-    grid = Table.grid(expand=True)
-    grid.add_column(justify="center", ratio=1)
-    grid.add_row("[bold cyan]OrionH[/bold cyan]")
-    grid.add_row("[yellow]Secure File Encryption & Hiding Tool[/yellow]")
-    grid.add_row("[dim]Inspired by Charles Buttowski's Father - ORION[/dim]")
-    return Panel(grid, box=box.DOUBLE)
-
-
-def create_menu() -> Panel:
-    """Create the main menu panel"""
-    menu_items = [
-        "[H] 🔒 Hide File",
-        "[D] 🔓 Decrypt/Extract File",
-        "[Q] 🚪 Quit",
-    ]
-    menu_text = "\n".join(menu_items)
-    return Panel(menu_text, title="[b]Menu", border_style="green")
 
 
 def process_file(
@@ -261,21 +209,16 @@ def display_result(
     console.print(result_panel)
 
 
-def list_current_files():
-    """List all files in the current directory"""
-    files = glob.glob("*")
-    return [f for f in files if os.path.isfile(f)]
-
-
 def main():
     console = Console()
-    
+
     import sys
-    
+
     # Get input file from command line if provided
     input_file = sys.argv[1] if len(sys.argv) > 1 else None
-    
-    while True:
+    operation = True
+
+    while operation:
         try:
             console.clear()
             layout = Layout()
@@ -342,18 +285,22 @@ def main():
                 )
                 display_result(success, error_msg, output_path, console)
 
-            Prompt.ask("\nPress Enter to continue...")
+            Prompt.ask("\nIts Hard to say Goodbye. Press ENTER")
+            operation = False
+            sys.exit(0)
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user[/]")
             time.sleep(1)
-            continue
+            sys.exit(0)
         except Exception as e:
             console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
             time.sleep(2)
+            sys.exit(0)
 
         except (KeyboardInterrupt, EOFError):
             Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
+            sys.exit(0)
 
 
 if __name__ == "__main__":
