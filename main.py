@@ -154,8 +154,8 @@ class OrionH:
             # Write chunk with metadata
             with open(current_container, 'ab') as container:
                 container.write(b'\n###ORION###\n')
-                # Add chunk metadata and signing key
-                metadata = f"{i+1}/{total_chunks}".encode()
+                # Add chunk metadata, original filename, and signing key
+                metadata = f"{i+1}/{total_chunks}|{os.path.basename(source_path)}".encode()
                 private_key_data = self.private_key.to_string()
                 container.write(b'###META###' + metadata + b'###KEY###' + private_key_data + b'###DATA###')
                 container.write(chunk)
@@ -189,7 +189,8 @@ class OrionH:
                 if b'###META###' in hidden_content:
                     meta_part, rest = hidden_content.split(b'###KEY###')
                     key_data, data = rest.split(b'###DATA###')
-                    chunk_info = meta_part.split(b'###META###')[1].decode()
+                    meta_info = meta_part.split(b'###META###')[1].decode()
+                    chunk_info, original_filename = meta_info.split('|')
                     current, total = map(int, chunk_info.split('/'))
                     total_chunks = total
                     
@@ -258,7 +259,7 @@ def main():
             # Extract original filename from metadata
             orion = OrionH(args.key)
             orion.generate_key()
-            output_path = f"recovered_{os.path.basename(args.container)}"
+            output_path = f"recovered_{original_filename}"
             orion.extract_file(args.container, output_path)
             print(f"File extracted successfully to {output_path}")
             
