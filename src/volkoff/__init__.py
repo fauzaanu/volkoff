@@ -1,2 +1,3 @@
-def hello() -> str:
-    return "Hello from volkoffh!"
+from volkoff.main import main
+
+__all__ = ['main']
