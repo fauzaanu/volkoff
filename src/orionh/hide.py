@@ -3,7 +3,6 @@ from pathlib import Path
 
 
 
-from pathlib import Path
 
 def hide_file(self, source_path: str | Path, output_path: Path | None = None) -> Path:
     """Hide encrypted file data"""
