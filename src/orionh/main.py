@@ -267,7 +267,7 @@ def list_current_files():
     return [f for f in files if os.path.isfile(f)]
 
 
-def main():
+def main(input_file: str | None = None):
     console = Console()
 
     while True:
@@ -275,8 +275,8 @@ def main():
             console.clear()
             layout = Layout()
             layout.split_column(
-                Layout(create_header(), size=5),
-                Layout(create_menu(), size=10),
+                Layout(create_header(), size=4),
+                Layout(create_menu(), size=6),
             )
             console.print(layout)
 
@@ -287,33 +287,39 @@ def main():
                 console.print("[yellow]Goodbye![/]")
                 return
 
-            # Show files only after choice is made
-            files = list_current_files()
-            if not files:
-                console.print(
-                    Panel(
-                        "[bold red]No files found in current directory![/]",
-                        border_style="red",
+            file_path = input_file
+            if not file_path:
+                # Show files only after choice is made
+                files = list_current_files()
+                if not files:
+                    console.print(
+                        Panel(
+                            "[bold red]No files found in current directory![/]",
+                            border_style="red",
+                        )
                     )
-                )
-                time.sleep(2)
-                continue
+                    time.sleep(2)
+                    continue
 
-            # Display file listing
-            console.print("\nAvailable files:")
-            for i, file in enumerate(files, 1):
-                console.print(f"{i}. {file}")
+                # Display file listing in a compact table
+                file_table = Table(show_header=False, box=box.SIMPLE)
+                file_table.add_column("Number", style="cyan")
+                file_table.add_column("Filename")
+                for i, file in enumerate(files, 1):
+                    file_table.add_row(str(i), file)
+                console.print("\nAvailable files:")
+                console.print(file_table)
 
-            # Get file selection
-            try:
-                file_index = int(Prompt.ask("Enter file number", default="1"))
-                file_path = files[file_index - 1]
-                if not Path(file_path).exists():
-                    raise ValueError("File not found!")
-            except (IndexError, ValueError) as e:
-                console.print(Panel(f"[bold red]{str(e)}[/]", border_style="red"))
-                time.sleep(2)
-                continue
+                # Get file selection
+                try:
+                    file_index = int(Prompt.ask("Enter file number", default="1"))
+                    file_path = files[file_index - 1]
+                    if not Path(file_path).exists():
+                        raise ValueError("File not found!")
+                except (IndexError, ValueError) as e:
+                    console.print(Panel(f"[bold red]{str(e)}[/]", border_style="red"))
+                    time.sleep(2)
+                    continue
 
             if choice == "h":  # Hide
                 success, key, output_path = process_file("hide", file_path)
@@ -335,8 +341,10 @@ def main():
 
 
 if __name__ == "__main__":
+    import sys
     try:
-        main()
+        input_file = sys.argv[1] if len(sys.argv) > 1 else None
+        main(input_file)
     except (KeyboardInterrupt, EOFError):
         Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
     except Exception as e:
