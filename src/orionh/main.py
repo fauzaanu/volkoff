@@ -20,7 +20,6 @@ from rich import box
 from rich.align import Align
 import hashlib
 import os
-import keyboard
 import glob
 from pathlib import Path
 
@@ -290,19 +289,8 @@ def main():
             )
             console.print(layout)
 
-            console.print("\nPress H to hide, D to decrypt/extract, or Q to quit...")
-
             # Get user choice
-            while True:
-                if keyboard.is_pressed("h"):
-                    choice = "h"
-                    break
-                elif keyboard.is_pressed("d"):
-                    choice = "d"
-                    break
-                elif keyboard.is_pressed("q"):
-                    choice = "q"
-                    break
+            choice = Prompt.ask("\nEnter your choice", choices=["h", "d", "q"], default="q").lower()
 
             if choice.lower() == "q":
                 console.print("[yellow]Goodbye![/]")
