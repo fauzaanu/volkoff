@@ -274,10 +274,23 @@ def main(input_file: str | None = None):
         try:
             console.clear()
             layout = Layout()
-            layout.split_column(
-                Layout(create_header(), size=4),
-                Layout(create_menu(), size=6),
-            )
+            
+            # Show input file notification if one is provided
+            if input_file:
+                notification = Panel(
+                    f"[bold cyan]Processing file:[/] {input_file}",
+                    border_style="cyan"
+                )
+                layout.split_column(
+                    Layout(create_header(), size=4),
+                    Layout(notification, size=3),
+                    Layout(create_menu(), size=6),
+                )
+            else:
+                layout.split_column(
+                    Layout(create_header(), size=4),
+                    Layout(create_menu(), size=6),
+                )
             console.print(layout)
 
             # Get user choice
