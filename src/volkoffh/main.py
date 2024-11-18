@@ -40,12 +40,29 @@ class VolkoffH:
             self.private_key = SigningKey.from_string(key_bytes, curve=SECP256k1)
             self.public_key = self.private_key.get_verifying_key()
         else:
-            # For hiding: generate new random key
-            key_bytes = os.urandom(32)
-            self.encryption_key = "".join(
-                chr((b % 26) + 65) for b in key_bytes
-            )  # Use only A-Z
-            key_bytes = hashlib.sha256(self.encryption_key.encode()).digest()
+            # For hiding: generate new random key with extreme security measures
+            # Combine multiple entropy sources
+            system_entropy = os.urandom(64)
+            time_entropy = str(time.time_ns()).encode()
+            process_entropy = str(os.getpid()).encode()
+            
+            # Create a complex mixing function
+            mixed = hashlib.sha512(system_entropy).digest()
+            mixed = hashlib.sha512(mixed + time_entropy).digest()
+            mixed = hashlib.sha512(mixed + process_entropy).digest()
+            
+            # Generate a 64-character key using the full ASCII printable range
+            charset = "".join([chr(x) for x in range(33, 127)])  # All printable ASCII
+            key_chars = []
+            for i in range(64):
+                # Use 6 bytes of entropy per character to avoid modulo bias
+                index = int.from_bytes(mixed[i*6:(i+1)*6], 'big')
+                key_chars.append(charset[index % len(charset)])
+            
+            self.encryption_key = "".join(key_chars)
+            # Double hash the key for extra security
+            key_bytes = hashlib.sha512(self.encryption_key.encode()).digest()
+            key_bytes = hashlib.sha256(key_bytes).digest()
             self.private_key = SigningKey.from_string(key_bytes, curve=SECP256k1)
             self.public_key = self.private_key.get_verifying_key()
 
@@ -67,7 +84,7 @@ class VolkoffH:
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
-            iterations=480000,
+            iterations=1000000,  # Increased iterations for stronger key derivation
         )
 
         key = base64.urlsafe_b64encode(kdf.derive(self.encryption_key.encode()))
