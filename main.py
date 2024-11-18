@@ -15,7 +15,7 @@ from pathlib import Path
 
 import base58
 from cryptography.fernet import Fernet
-from safetensors.torch import save_file, load_file
+from safetensors import safe_open
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
@@ -141,15 +141,19 @@ class OrionH:
         }
         
         # Save to safetensors file
-        save_file(tensors, output_path, metadata)
+        with safe_open(output_path, framework="pt", torch_dtype="float32", device="cpu") as f:
+            f.save_tensor("encrypted_data", encrypted_data)
+            # Save metadata in the header
+            f.write_metadata(metadata)
         
         return output_path
 
     def extract_file(self, safetensors_path, output_path):
         """Extract and decrypt hidden file from safetensors file"""
         # Load the safetensors file
-        tensors = load_file(safetensors_path)
-        metadata = load_file(safetensors_path, framework="metadata")
+        with safe_open(safetensors_path, framework="pt") as f:
+            encrypted_data = f.get_tensor("encrypted_data")
+            metadata = f.metadata()
         
         # Restore private key and derive public key
         self.private_key = SigningKey.from_string(bytes.fromhex(metadata["private_key"]), curve=SECP256k1)
@@ -197,7 +201,8 @@ def main():
             output_dir.mkdir(exist_ok=True)
             
             # Load metadata to get original filename
-            metadata = load_file(args.container, framework="metadata")
+            with safe_open(args.container, framework="pt") as f:
+                metadata = f.metadata()
             original_filename = metadata["filename"]
             output_path = output_dir / f"recovered_{original_filename}"
             orion.extract_file(args.container, output_path)
