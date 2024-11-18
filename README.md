@@ -56,7 +56,7 @@ python main.py extract --container image.jpg --output recovered_secret.txt
 
 ## How It Works
 
-OrionH uses Bitcoin-style cryptography to secure your files. Here's the detailed process:
+OrionH uses a combination of Bitcoin-style cryptography and modern encryption to secure your files. Here's the detailed process:
 
 ### Key Generation
 1. Generates a private key using the SECP256k1 elliptic curve (the same one Bitcoin uses)
@@ -68,51 +68,22 @@ OrionH uses Bitcoin-style cryptography to secure your files. Here's the detailed
 
 ### File Encryption Process
 1. When hiding a file:
-   - Reads the source file's contents
-   - Creates a SHA-256 hash of the file data
+   - Generates a salt and derives an encryption key using PBKDF2 with:
+     - SHA-256 as the hash function
+     - 480,000 iterations
+     - 32-byte key length
+   - Encrypts the file data using Fernet (AES-128 in CBC mode)
+   - Creates a SHA-256 hash of the encrypted data
    - Signs the hash with the private key using ECDSA
-   - Combines the original file data with the signature
-   - Appends the result to the container file with special markers
+   - Combines the encrypted data, salt, and signature
+   - Appends the result to the container file with special markers (###ORION###)
 
 2. When extracting a file:
    - Locates the hidden data using the markers
-   - Separates the file data from the signature
+   - Separates the encrypted data, salt, and signature
    - Verifies the signature using the public key
-   - If verification succeeds, recovers the original file
-
-### Security Features and Limitations
-
-While OrionH implements strong cryptographic primitives, users should be aware of these security considerations:
-
-1. Key Management Vulnerabilities:
-   - Private keys are generated fresh each time the program runs
-   - Keys are not persisted between sessions
-   - No key backup mechanism exists
-   - Keys are held in memory during program execution
-
-2. Steganographic Weaknesses:
-   - The presence of hidden data is detectable due to obvious markers (###ORION###)
-   - The end of the container file can be easily examined to find hidden content
-   - No attempt to disguise the presence of hidden data
-
-3. Implementation Limitations:
-   - No encryption of the file contents (only signing)
-   - Raw file data is stored in plaintext
-   - Signature only proves authenticity, not confidentiality
-   - No protection against replay attacks
-
-4. Container File Vulnerabilities:
-   - Multiple writes to the same container file will append multiple copies
-   - No size limits on container files
-   - No validation of container file integrity
-
-For actual secure file storage, consider using:
-- Full disk encryption
-- Dedicated encryption tools like VeraCrypt
-- Proper key management systems
-- True steganographic techniques
-
-The current implementation is primarily educational and demonstrates Bitcoin-style cryptographic concepts.
+   - Derives the same encryption key using the stored salt
+   - Decrypts the data using Fernet
 
 ## Contributing
 
