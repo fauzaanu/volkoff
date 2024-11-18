@@ -124,7 +124,7 @@ class OrionH:
 
 
     def hide_file(self, source_path, output_path=None):
-        """Hide encrypted file data in a safetensors file"""
+        """Hide encrypted file data"""
         if not self.private_key:
             self.generate_key()
 
@@ -137,31 +137,32 @@ class OrionH:
         if output_path is None:
             output_path = output_dir / f"{Path(source_path).stem}.safetensors"
 
-        # Prepare metadata and data
-        metadata = {
-            "filename": os.path.basename(source_path),
-            "private_key": self.private_key.to_string().hex()
-        }
-
-        # Create tensors dict with encrypted data
-        tensors = {
-            "encrypted_data": encrypted_data
-        }
-
         # Create output directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Save to fake safetensors file
+        # Store private key with encrypted data
+        private_key_hex = self.private_key.to_string().hex()
+        stored_data = f"{private_key_hex}###KEY###".encode() + encrypted_data
+
+        # Save to file
         with open(output_path, 'wb') as f:
-            f.write(encrypted_data)
+            f.write(stored_data)
 
         return output_path
 
     def extract_file(self, safetensors_path, output_path):
-        """Extract and decrypt hidden file from safetensors file"""
-        # Load the encrypted data directly
+        """Extract and decrypt hidden file"""
+        # Load the stored data
         with open(safetensors_path, 'rb') as f:
-            encrypted_data = f.read()
+            stored_data = f.read()
+
+        # Split private key and encrypted data
+        stored_key, encrypted_data = stored_data.split(b'###KEY###', 1)
+        stored_key = stored_key.decode()
+
+        # Verify the key matches
+        if stored_key != self.private_key.to_string().hex():
+            raise ValueError("Incorrect decryption key")
 
         # Decrypt the data
         decrypted_data = self.decrypt_file(encrypted_data)
