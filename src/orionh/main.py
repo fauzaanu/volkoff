@@ -277,6 +277,7 @@ def main(input_file: str | None = None):
             
             # Show input file notification if one is provided
             if input_file:
+                file_path = input_file
                 notification = Panel(
                     f"[bold cyan]Processing file:[/] {input_file}",
                     border_style="cyan"
@@ -288,7 +289,6 @@ def main(input_file: str | None = None):
                 console.print(layout)
                 # Automatically proceed with hiding for provided file
                 choice = "h"
-                return choice
             
             # If no input file, show menu and get choice
             layout.split_column(
