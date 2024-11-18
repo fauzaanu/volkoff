@@ -143,14 +143,8 @@ def main():
     while operation:
         try:
             console.clear()
-            layout = Layout()
-
-            # Show header and menu
-            layout.split_column(
-                Layout(create_header(), size=4),
-                Layout(create_menu(), size=6),
-            )
-            console.print(layout)
+            console.print(create_header())
+            console.print("\n" + create_menu())
 
             # If input file was provided via command line, automatically hide it
             if input_file:

@@ -12,25 +12,14 @@ from pathlib import Path
 
 
 
-def create_header() -> Panel:
+def create_header() -> str:
     """Create the application header"""
-    grid = Table.grid(expand=True)
-    grid.add_column(justify="center", ratio=1)
-    grid.add_row("[bold cyan]OrionH[/bold cyan]")
-    grid.add_row("[yellow]Secure File Encryption & Hiding Tool[/yellow]")
-    grid.add_row("[dim]Inspired by Charles Buttowski's Father - ORION[/dim]")
-    return Panel(grid, box=box.DOUBLE)
+    return "\n[bold cyan]OrionH[/]\n[yellow]Secure File Encryption & Hiding Tool[/]"
 
 
-def create_menu() -> Panel:
-    """Create the main menu panel"""
-    menu_items = [
-        "[H] 🔒 Hide File",
-        "[D] 🔓 Decrypt/Extract File",
-        "[Q] 🚪 Quit",
-    ]
-    menu_text = "\n".join(menu_items)
-    return Panel(menu_text, title="[b]Menu", border_style="green")
+def create_menu() -> str:
+    """Create the main menu text"""
+    return "[H]🔒 Hide  [D]🔓 Extract  [Q]🚪 Quit"
 
 
 def list_current_files():
@@ -97,27 +86,9 @@ def display_result(
 ) -> None:
     """Display the operation result"""
     if success:
-        result_panel = Panel(
-            Align.center(
-                Text.from_markup(
-                    f"[bold green]Operation Successful![/]\n\n"
-                    f"[blue]Output:[/] {output_path}\n\n"
-                    + (
-                        f"[yellow]Encryption Key:[/] [bold red]{message}[/]\n"
-                        if message
-                        else ""
-                    )
-                )
-            ),
-            title="[bold green]✅ Success",
-            border_style="green",
-            box=box.DOUBLE,
-        )
+        console.print("\n[bold green]✅ Success![/]")
+        console.print(f"[blue]Output:[/] {output_path}")
+        if message:
+            console.print(f"[yellow]Key:[/] [bold red]{message}[/]")
     else:
-        result_panel = Panel(
-            f"[bold red]Error:[/] {message}",
-            title="[bold red]❌ Failed",
-            border_style="red",
-            box=box.DOUBLE,
-        )
-    console.print(result_panel)
+        console.print(f"\n[bold red]❌ Error:[/] {message}")
