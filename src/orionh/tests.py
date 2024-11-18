@@ -7,7 +7,8 @@ class TestOrionH(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method"""
         # Create a temporary test file
-        self.test_file = Path(tempfile.mktemp(suffix='.txt'))
+        self.test_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.test_dir / "test.txt"
         self.test_file.write_bytes(b"Test content")
         
         # Create OrionH instance with a fixed key for testing
@@ -18,11 +19,16 @@ class TestOrionH(unittest.TestCase):
     
     def tearDown(self):
         """Clean up after each test method"""
-        if self.test_file.exists():
-            self.test_file.unlink()
-        for file in self.tmp_path.glob("*"):
-            file.unlink()
-        self.tmp_path.rmdir()
+        # Clean up all temporary files and directories
+        if hasattr(self, 'test_dir') and self.test_dir.exists():
+            for file in self.test_dir.glob("*"):
+                file.unlink()
+            self.test_dir.rmdir()
+            
+        if hasattr(self, 'tmp_path') and self.tmp_path.exists():
+            for file in self.tmp_path.glob("*"):
+                file.unlink()
+            self.tmp_path.rmdir()
 
     def test_encryption_key_generation(self):
         """Test that encryption keys are generated correctly"""
