@@ -9,9 +9,19 @@ This tool will implement an encryption that is impossible to break inspired by t
 
 import argparse
 import base64
+import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.layout import Layout
+from rich.live import Live
+from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.prompt import Prompt, Confirm
+from rich.syntax import Syntax
+from rich import box
+from rich.columns import Columns
+from rich.align import Align
 import hashlib
 import os
 from pathlib import Path
@@ -146,67 +156,136 @@ class OrionH:
         from orionh.extract import extract_file
         return extract_file(self, safetensors_path, output_path)
 
+def create_header() -> Panel:
+    """Create the application header"""
+    grid = Table.grid(expand=True)
+    grid.add_column(justify="center", ratio=1)
+    grid.add_row("[bold cyan]OrionH[/bold cyan]")
+    grid.add_row("[yellow]Secure File Encryption & Hiding Tool[/yellow]")
+    grid.add_row("[dim]Inspired by Charles Buttowski's Father - ORION[/dim]")
+    return Panel(grid, box=box.DOUBLE)
+
+def create_menu() -> Panel:
+    """Create the main menu panel"""
+    menu_items = [
+        "[1] 🔒 Hide File",
+        "[2] 🔓 Extract File",
+        "[q] 🚪 Quit",
+    ]
+    menu_text = "\n".join(menu_items)
+    return Panel(menu_text, title="[b]Menu", border_style="green")
+
+def process_file(action: str, file_path: str | Path, key: str | None = None) -> tuple[bool, str, Path | None]:
+    """Process file with progress animation"""
+    try:
+        output_dir = Path("orion_output")
+        output_dir.mkdir(exist_ok=True)
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            console=Console(),
+        ) as progress:
+            
+            if action == "hide":
+                orion = OrionH()
+                task = progress.add_task("[cyan]Encrypting...", total=100)
+                for i in range(100):
+                    progress.update(task, advance=1)
+                    time.sleep(0.02)
+                output_path = orion.hide_file(file_path)
+                return True, orion.encryption_key, output_path
+                
+            else:  # extract
+                if not key:
+                    return False, "No encryption key provided", None
+                    
+                orion = OrionH(key)
+                task = progress.add_task("[cyan]Decrypting...", total=100)
+                
+                with open(file_path, "rb") as f:
+                    stored_data = f.read()
+                _, rest = stored_data.split(b"###KEY###", 1)
+                original_ext, _ = rest.split(b"###EXT###", 1)
+                original_ext = original_ext.decode()
+                
+                original_name = Path(file_path).stem
+                output_path = output_dir / f"recovered_{original_name}{original_ext}"
+                
+                for i in range(100):
+                    progress.update(task, advance=1)
+                    time.sleep(0.02)
+                    
+                orion.extract_file(file_path, output_path)
+                return True, "", output_path
+                
+    except Exception as e:
+        return False, str(e), None
+
+def display_result(success: bool, message: str, output_path: Path | None, console: Console) -> None:
+    """Display the operation result"""
+    if success:
+        result_panel = Panel(
+            Align.center(
+                Text.from_markup(
+                    f"[bold green]Operation Successful![/]\n\n"
+                    f"[blue]Output:[/] {output_path}\n\n"
+                    + (f"[yellow]Encryption Key:[/] [bold red]{message}[/]\n" if message else "")
+                )
+            ),
+            title="[bold green]✅ Success",
+            border_style="green",
+            box=box.DOUBLE
+        )
+    else:
+        result_panel = Panel(
+            f"[bold red]Error:[/] {message}",
+            title="[bold red]❌ Failed",
+            border_style="red",
+            box=box.DOUBLE
+        )
+    console.print(result_panel)
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="OrionH - File encryption and hiding tool"
-    )
-    parser.add_argument("action", choices=["hide", "extract"], help="Action to perform")
-    parser.add_argument(
-        "input_file", help="Source file for hide, encrypted file for extract"
-    )
-    parser.add_argument("key", nargs="?", help="Encryption key (required for extract)")
-
-    args = parser.parse_args()
-
-    # Create output directory
-    output_dir = Path("orion_output")
-    output_dir.mkdir(exist_ok=True)
-
     console = Console()
-
-    if args.action == "hide":
-        orion = OrionH()  # Will generate a random encryption key internally
+    
+    while True:
+        console.clear()
+        layout = Layout()
+        layout.split_column(
+            Layout(create_header(), size=5),
+            Layout(create_menu(), size=10),
+        )
+        console.print(layout)
         
-        # Create warning panel for key
-        key_text = Text()
-        key_text.append("IMPORTANT: ", style="bold red")
-        key_text.append("Save this encryption key securely (e.g., in Bitwarden).\n")
-        key_text.append("You will need it to decrypt your files later!\n\n")
-        key_text.append("Encryption Key: ", style="bold yellow")
-        key_text.append(orion.encryption_key, style="bold green")
+        choice = Prompt.ask(
+            "Enter your choice",
+            choices=["1", "2", "q"],
+            default="1"
+        )
         
-        console.print(Panel(key_text, title="Security Warning", border_style="red"))
-
-        output_path = orion.hide_file(args.input_file)
-        console.print("\n✨ File hidden successfully in:", style="bold green")
-        console.print(str(output_path), style="blue underline")
-
-    elif args.action == "extract":
-        if not args.key:
-            console.print("❌ Error: extract action requires an encryption key", style="bold red")
-            return
+        if choice == "q":
+            console.print("[yellow]Goodbye![/]")
+            break
             
-        try:
-            orion = OrionH(args.key)
-            # First read the original extension from the safetensors file
-            with open(args.input_file, "rb") as f:
-                stored_data = f.read()
-            _, rest = stored_data.split(b"###KEY###", 1)
-            original_ext, _ = rest.split(b"###EXT###", 1)
-            original_ext = original_ext.decode()
-
-            # Now create output path with the original extension
-            original_name = Path(args.input_file).stem
-            output_path = output_dir / f"recovered_{original_name}{original_ext}"
-            orion.extract_file(args.input_file, output_path)
+        file_path = Prompt.ask("Enter file path")
+        if not Path(file_path).exists():
+            console.print(Panel("[bold red]File not found![/]", border_style="red"))
+            continue
             
-            console.print("\n✅ File extracted successfully to:", style="bold green")
-            console.print(str(output_path), style="blue underline")
+        if choice == "1":  # Hide
+            success, key, output_path = process_file("hide", file_path)
+            display_result(success, key, output_path, console)
             
-        except ValueError as e:
-            console.print(f"\n❌ Error: {str(e)}", style="bold red")
-        except Exception as e:
-            console.print(f"\n❌ Unexpected error: {str(e)}", style="bold red")
+        else:  # Extract
+            key = Prompt.ask("Enter encryption key")
+            success, error_msg, output_path = process_file("extract", file_path, key)
+            display_result(success, error_msg, output_path, console)
+            
+        if Prompt.ask("\nPress Enter to continue..."):
+            continue
 
 
 if __name__ == "__main__":
