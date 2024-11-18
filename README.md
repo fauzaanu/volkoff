@@ -42,3 +42,7 @@ Important Security Notes:
 - Store encryption keys securely - they cannot be recovered
 - Maintain secure backups of encryption keys
 - Verify successful decryption after encrypting critical files
+
+## Disclaimer
+
+Make sure to 
