@@ -254,7 +254,8 @@ def list_current_files():
 def main():
     console = Console()
     
-    while True:
+    try:
+        while True:
         console.clear()
         layout = Layout()
         
@@ -324,5 +325,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
 
