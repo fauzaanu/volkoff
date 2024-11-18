@@ -275,6 +275,7 @@ def main():
         
         console.print("\nPress H to hide, D to decrypt/extract, or Q to quit...")
         
+        # Get user choice
         while True:
             if keyboard.is_pressed('h'):
                 choice = 'h'
@@ -288,7 +289,7 @@ def main():
         
         if choice.lower() == "q":
             console.print("[yellow]Goodbye![/]")
-            break
+            return
             
         files = list_current_files()
         if not files:
@@ -304,10 +305,9 @@ def main():
         try:
             file_path = files[int(file_index) - 1]
             if not Path(file_path).exists():
-                console.print(Panel("[bold red]File not found![/]", border_style="red"))
-                continue
-        except (IndexError, ValueError):
-            console.print(Panel("[bold red]Invalid file number![/]", border_style="red"))
+                raise ValueError("File not found!")
+        except (IndexError, ValueError) as e:
+            console.print(Panel(f"[bold red]{str(e)}![/]", border_style="red"))
             time.sleep(2)
             continue
             
@@ -320,8 +320,7 @@ def main():
             success, error_msg, output_path = process_file("extract", file_path, key)
             display_result(success, error_msg, output_path, console)
             
-        if Prompt.ask("\nPress Enter to continue..."):
-            continue
+        Prompt.ask("\nPress Enter to continue...")
 
     except Exception as e:
         console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
