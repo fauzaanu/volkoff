@@ -267,55 +267,40 @@ def list_current_files():
     return [f for f in files if os.path.isfile(f)]
 
 
-def main(input_file: str | None = None):
+def main():
     console = Console()
-
+    
     import sys
-
-    if len(sys.argv) <= 1:
-        Console().print("[bold red]Error:[/] Input file must be provided as argument")
-        sys.exit(1)
-
+    
+    # Get input file from command line if provided
+    input_file = sys.argv[1] if len(sys.argv) > 1 else None
+    
     while True:
         try:
-            Console().print("[bold green]Welcome to OrionH![/]")
-            Console().print("[bold green]You are processing the following file:[/]")
-            Console().print(f"[bold green]{sys.argv[1]}[/]")
-            main(sys.argv[1])
-
             console.clear()
             layout = Layout()
 
-            # Show input file notification if one is provided
-            if input_file:
-                file_path = input_file
-                notification = Panel(
-                    f"[bold cyan]Processing file:[/] {input_file}", border_style="cyan"
-                )
-                layout.split_column(
-                    Layout(create_header(), size=4),
-                    Layout(notification, size=3),
-                )
-                console.print(layout)
-                # Automatically proceed with hiding for provided file
-                choice = "h"
-
-            # If no input file, show menu and get choice
+            # Show header and menu
             layout.split_column(
                 Layout(create_header(), size=4),
                 Layout(create_menu(), size=6),
             )
             console.print(layout)
-            choice = Prompt.ask(
-                "\nEnter your choice", choices=["h", "d", "q"], default="q"
-            ).lower()
 
-            if choice == "q":
-                console.print("[yellow]Goodbye![/]")
-                return
+            # If input file was provided via command line, automatically hide it
+            if input_file:
+                console.print(f"\n[bold cyan]Processing file:[/] {input_file}")
+                file_path = input_file
+                choice = "h"
+            else:
+                # Otherwise show menu and get user choice
+                choice = Prompt.ask(
+                    "\nEnter your choice", choices=["h", "d", "q"], default="q"
+                ).lower()
 
-            file_path = input_file
-            if not file_path:
+                if choice == "q":
+                    console.print("[yellow]Goodbye![/]")
+                    return
                 files = list_current_files()
                 if not files:
                     console.print(
@@ -372,5 +357,4 @@ def main(input_file: str | None = None):
 
 
 if __name__ == "__main__":
-    # DO NOT MODIFY THIS PART
     main()
