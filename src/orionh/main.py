@@ -287,10 +287,8 @@ def main(input_file: str | None = None):
                 console.print("[yellow]Goodbye![/]")
                 return
 
-            # Show files only if no input file was provided
-            if input_file:
-                file_path = input_file
-            else:
+            file_path = input_file
+            if not file_path:
                 files = list_current_files()
                 if not files:
                     console.print(
