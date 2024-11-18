@@ -1,40 +1,32 @@
 # Volkoff
 
-A simple script to encrypt and decrypt files.
+Volkoff helps you lock and unlock your files. It's like a safe for your computer files!
 
-Install as a package globally with:
-
+To get Volkoff, type this:
 ```bash
 pip install volkoff
 ```
 
-And then run from anywhere with
-
+To start it, just type:
 ```bash
 vk
 ```
 
-## How the Encryption Works
+## How It Works
 
-Here's exactly what happens when you encrypt a file:
+When you lock a file:
+1. Volkoff makes a special key just for you
+2. It saves what kind of file it is (like a picture or text)
+3. It locks up your file with the key
+4. It gives you the key to save
 
-1. **Key Generation**: 
-   - A random 32-byte (256-bit) key is generated using os.urandom
-   - This key is converted to a hex string that you need to save
+When you want to unlock it:
+1. You give Volkoff your key
+2. It checks if the key is right
+3. It unlocks your file
+4. You get your file back, just like it was before
 
-2. **File Container Format**:
-   - Your file's extension is saved (like .jpg, .pdf)
-   - The file data is combined with its extension
-   - This creates a container: "extension|filedata"
-
-3. **Encryption Process**:
-   - A fresh 12-byte random number (nonce) is generated
-   - The container is encrypted using AES-256 in GCM mode
-   - The nonce is prepended to the encrypted data
-   - Format: [nonce][encrypted_data]
-
-4. **Decryption Process**:
-   - Your saved key is used to initialize AES-256-GCM
-   - The first 12 bytes are split off as the nonce
-   - The rest is decrypted using your key and the nonce
-   - The original extension and file data are extracted
+Remember:
+- Keep your key safe! Without it, you can't unlock your files
+- Write down your key somewhere safe
+- Test unlocking right after you lock something important
