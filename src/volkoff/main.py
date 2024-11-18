@@ -34,9 +34,11 @@ class VolkoffH:
 
     def __init__(self, encryption_key: str | None = None):
         if encryption_key:
-            # For extraction: use provided key
+            # For extraction: use provided key with same hashing as encryption
             self.encryption_key = encryption_key
-            key_bytes = hashlib.sha256(encryption_key.encode()).digest()
+            # Apply same double-hashing as in encryption
+            key_bytes = hashlib.sha512(encryption_key.encode()).digest()
+            key_bytes = hashlib.sha256(key_bytes).digest()
             self.private_key = SigningKey.from_string(key_bytes, curve=SECP256k1)
             self.public_key = self.private_key.get_verifying_key()
         else:
