@@ -91,7 +91,7 @@ class VolkoffH:
         return key, salt
 
     def encrypt_file(self, file_path):
-        """Encrypt a file using AES and sign it with ECDSA"""
+        """Encrypt a file using AES"""
         if not self.private_key:
             raise ValueError("No private key set")
 
@@ -103,26 +103,17 @@ class VolkoffH:
         f = Fernet(key)
         encrypted_data = f.encrypt(file_data)
 
-        # Sign the encrypted data
-        data_hash = hashlib.sha256(encrypted_data).digest()
-        signature = self.private_key.sign(data_hash)
-
-        # Combine encrypted data with salt and signature
-        return encrypted_data + b"###SALT###" + salt + b"###SIG###" + signature
+        # Combine encrypted data with salt
+        return encrypted_data + b"###SALT###" + salt
 
     def decrypt_file(self, encrypted_data):
-        """Decrypt file and verify signature"""
+        """Decrypt file"""
         if not self.public_key:
             raise ValueError("No public key set")
 
         try:
             # Split components
-            encrypted_content, rest = encrypted_data.split(b"###SALT###")
-            salt, signature = rest.split(b"###SIG###")
-
-            # Verify signature
-            data_hash = hashlib.sha256(encrypted_content).digest()
-            self.public_key.verify(signature, data_hash)
+            encrypted_content, salt = encrypted_data.split(b"###SALT###")
 
             # Decrypt data
             key, _ = self._derive_key(salt)
