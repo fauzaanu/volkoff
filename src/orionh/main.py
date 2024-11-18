@@ -7,20 +7,16 @@ The name is inspired by Charles Buttowski's Father whose code name is ORION.
 This tool will implement an encryption that is impossible to break inspired by the bitcoin secret key design
 """
 
-import argparse
 import base64
 import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.layout import Layout
-from rich.live import Live
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
-from rich.prompt import Prompt, Confirm
-from rich.syntax import Syntax
+from rich.prompt import Prompt
 from rich import box
-from rich.columns import Columns
 from rich.align import Align
 import hashlib
 import os
