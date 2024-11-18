@@ -125,9 +125,6 @@ class OrionH:
 
     def hide_file(self, source_path, output_path=None):
         """Hide encrypted file data"""
-        if not self.private_key:
-            self.generate_key()
-
         encrypted_data = self.encrypt_file(source_path)
 
         # Create orion_output directory if it doesn't exist
@@ -184,8 +181,7 @@ if __name__ == '__main__':
     output_dir.mkdir(exist_ok=True)
 
     if args.action == 'hide':
-        orion = OrionH()
-        orion.generate_key()
+        orion = OrionH()  # Will generate a random encryption key internally
         print("\nIMPORTANT: Save this encryption key securely (e.g., in Bitwarden).")
         print("You will need it to decrypt your files later!")
         print(f"\nEncryption Key: {orion.encryption_key}\n")
