@@ -214,9 +214,29 @@ def main():
 
                 if not files and not dirs:
                     continue
+
+                try:
+                    file_index = int(Prompt.ask("\nEnter number", default="1"))
+                    
+                    # Handle parent directory
+                    if file_index == 0 and current_path != current_path.root:
+                        current_dir = current_dir.parent
+                        continue
+                        
+                    # Handle directory selection
+                    if file_index <= len(dirs):
+                        current_dir = dirs[file_index - 1]
+                        continue
+                        
+                    # Handle file selection
+                    if file_index <= len(dirs) + len(files):
+                        file_path = files[file_index - len(dirs) - 1]
+                        break
+                        
+                    raise ValueError("Invalid selection!")
                 except (IndexError, ValueError) as e:
-                    console.print(Panel(f"[bold red]{str(e)}[/]", border_style="red"))
-                    time.sleep(2)
+                    console.print(f"[bold red]Error:[/] {str(e)}")
+                    time.sleep(1)
                     continue
 
             if choice == "h":  # Hide
@@ -229,22 +249,17 @@ def main():
                 )
                 display_result(success, error_msg, output_path, console)
 
-            Prompt.ask("\nIts Hard to say Goodbye. Press ENTER")
+            Prompt.ask("\nPress ENTER to continue")
             operation = False
-            sys.exit(0)
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user[/]")
             time.sleep(1)
-            sys.exit(0)
+            break
         except Exception as e:
             console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
             time.sleep(2)
-            sys.exit(0)
-
-        except (KeyboardInterrupt, EOFError):
-            Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
-            sys.exit(0)
+            break
 
 
 if __name__ == "__main__":
