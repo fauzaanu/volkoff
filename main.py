@@ -14,9 +14,8 @@ import sys
 from pathlib import Path
 
 import base58
-import numpy as np
-from PIL import Image
 from cryptography.fernet import Fernet
+from safetensors.torch import save_file, load_file
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
@@ -115,100 +114,52 @@ class OrionH:
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
 
-    def _generate_default_container(self, index=None):
-        """Generate a default container image"""
-        # Create a random noise image
-        img_size = (800, 600)
-        random_array = np.random.randint(0, 255, (*img_size, 3), dtype=np.uint8)
-        img = Image.fromarray(random_array)
 
-        # Create orion_output directory if it doesn't exist
-        output_dir = Path('orion_output')
-        output_dir.mkdir(exist_ok=True)
-
-        # Save to a temporary file in the output directory
-        container_path = output_dir / (f'container_{index}.png' if index is not None else 'container.png')
-        img.save(container_path)
-        return container_path
-
-    def _split_data(self, data, max_size=5*1024*1024):  # 5MB chunks
-        """Split data into chunks of maximum size"""
-        return [data[i:i + max_size] for i in range(0, len(data), max_size)]
-
-    def hide_file(self, source_path, container_path=None):
-        """Hide encrypted file data inside another file, splitting if necessary"""
+    def hide_file(self, source_path, output_path=None):
+        """Hide encrypted file data in a safetensors file"""
         if not self.private_key:
             self.generate_key()
 
         encrypted_data = self.encrypt_file(source_path)
-        chunks = self._split_data(encrypted_data)
-        total_chunks = len(chunks)
-
-        container_paths = []
-        for i, chunk in enumerate(chunks):
-            # Generate or use container path
-            if container_path is None:
-                current_container = self._generate_default_container(i if total_chunks > 1 else None)
-                print(f"Generated container image {i+1}/{total_chunks}: {current_container}")
-            else:
-                base, ext = os.path.splitext(container_path)
-                current_container = f"{base}_{i}{ext}" if total_chunks > 1 else container_path
-
-            container_paths.append(current_container)
-
-            # Write chunk with metadata and next container info
-            with open(current_container, 'ab') as container:
-                container.write(b'\n###ORION###\n')
-                # Add next container info if this isn't the last chunk
-                next_container = f"{base}_{i+1}{ext}" if i < total_chunks - 1 else "END"
-                metadata = f"{os.path.basename(source_path)}|{next_container}".encode()
-                private_key_data = self.private_key.to_string()
-                container.write(b'###META###' + metadata + b'###KEY###' + private_key_data + b'###DATA###')
-                container.write(chunk)
-
-        return container_paths
-
-    def extract_file(self, container_path, output_path):
-        """Extract and decrypt hidden file from one or more containers"""
-        all_data = []
-        current_path = container_path
         
-        while True:
-            if not os.path.exists(current_path):
-                raise ValueError(f"Container file not found: {current_path}")
+        # Create orion_output directory if it doesn't exist
+        output_dir = Path('orion_output')
+        output_dir.mkdir(exist_ok=True)
+        
+        if output_path is None:
+            output_path = output_dir / f"{Path(source_path).stem}.safetensors"
+        
+        # Prepare metadata and data
+        metadata = {
+            "filename": os.path.basename(source_path),
+            "private_key": self.private_key.to_string().hex()
+        }
+        
+        # Create tensors dict with encrypted data
+        tensors = {
+            "encrypted_data": encrypted_data
+        }
+        
+        # Save to safetensors file
+        save_file(tensors, output_path, metadata)
+        
+        return output_path
 
-            with open(current_path, 'rb') as container:
-                content = container.read()
-
-            if b'###ORION###' not in content:
-                raise ValueError(f"No hidden content found in {current_path}")
-
-            # Extract metadata, key and data
-            hidden_content = content.split(b'###ORION###')[1].strip()
-            meta_part, rest = hidden_content.split(b'###KEY###')
-            key_data, data = rest.split(b'###DATA###')
-            meta_info = meta_part.split(b'###META###')[1].decode()
-            original_filename, next_container = meta_info.split('|')
-
-            # Restore private key and derive public key
-            self.private_key = SigningKey.from_string(key_data, curve=SECP256k1)
-            self.public_key = self.private_key.get_verifying_key()
-
-            all_data.append(data)
-
-            # Check if this is the last container
-            if next_container == "END":
-                break
-
-            # Update path to next container
-            container_dir = os.path.dirname(current_path)
-            current_path = os.path.join(container_dir, next_container)
-
-        # Combine all data chunks
-        combined_data = b''.join(all_data)
-
-        decrypted_data = self.decrypt_file(combined_data)
-
+    def extract_file(self, safetensors_path, output_path):
+        """Extract and decrypt hidden file from safetensors file"""
+        # Load the safetensors file
+        tensors = load_file(safetensors_path)
+        metadata = load_file(safetensors_path, framework="metadata")
+        
+        # Restore private key and derive public key
+        self.private_key = SigningKey.from_string(bytes.fromhex(metadata["private_key"]), curve=SECP256k1)
+        self.public_key = self.private_key.get_verifying_key()
+        
+        # Get encrypted data and decrypt
+        encrypted_data = tensors["encrypted_data"]
+        decrypted_data = self.decrypt_file(encrypted_data)
+        
+        # Write decrypted data to output file
         with open(output_path, 'wb') as output:
             output.write(decrypted_data)
 
@@ -232,13 +183,8 @@ def main():
             print("You will need it to decrypt your files later!")
             print(f"\nEncryption Key: {orion.encryption_key}\n")
 
-            container_paths = orion.hide_file(args.source, args.container)
-            if len(container_paths) > 1:
-                print(f"\nFile split and hidden across {len(container_paths)} containers:")
-                for path in container_paths:
-                    print(f"- {path}")
-            else:
-                print(f"\nFile hidden successfully in {container_paths[0]}")
+            output_path = orion.hide_file(args.source, args.container)
+            print(f"\nFile hidden successfully in {output_path}")
 
         elif args.action == 'extract':
             if not args.container or not args.key:
@@ -246,21 +192,13 @@ def main():
 
             orion = OrionH(args.key)
 
-            # First read the container to get the original filename
-            with open(args.container, 'rb') as container:
-                content = container.read()
-                if b'###ORION###' not in content:
-                    raise ValueError("No hidden content found")
-                hidden_content = content.split(b'###ORION###')[1].strip()
-                meta_part = hidden_content.split(b'###KEY###')[0]
-                meta_info = meta_part.split(b'###META###')[1].decode()
-                _, original_filename = meta_info.split('|')
-
-            # Now extract with the original filename
             # Create orion_output directory if it doesn't exist
             output_dir = Path('orion_output')
             output_dir.mkdir(exist_ok=True)
-
+            
+            # Load metadata to get original filename
+            metadata = load_file(args.container, framework="metadata")
+            original_filename = metadata["filename"]
             output_path = output_dir / f"recovered_{original_filename}"
             orion.extract_file(args.container, output_path)
             print(f"File extracted successfully to {output_path}")
