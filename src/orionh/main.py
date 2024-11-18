@@ -270,17 +270,27 @@ def list_current_files():
 def main(input_file: str | None = None):
     console = Console()
 
+    import sys
+
+    if len(sys.argv) <= 1:
+        Console().print("[bold red]Error:[/] Input file must be provided as argument")
+        sys.exit(1)
+
     while True:
         try:
+            Console().print("[bold green]Welcome to OrionH![/]")
+            Console().print("[bold green]You are processing the following file:[/]")
+            Console().print(f"[bold green]{sys.argv[1]}[/]")
+            main(sys.argv[1])
+
             console.clear()
             layout = Layout()
-            
+
             # Show input file notification if one is provided
             if input_file:
                 file_path = input_file
                 notification = Panel(
-                    f"[bold cyan]Processing file:[/] {input_file}",
-                    border_style="cyan"
+                    f"[bold cyan]Processing file:[/] {input_file}", border_style="cyan"
                 )
                 layout.split_column(
                     Layout(create_header(), size=4),
@@ -289,14 +299,16 @@ def main(input_file: str | None = None):
                 console.print(layout)
                 # Automatically proceed with hiding for provided file
                 choice = "h"
-            
+
             # If no input file, show menu and get choice
             layout.split_column(
                 Layout(create_header(), size=4),
                 Layout(create_menu(), size=6),
             )
             console.print(layout)
-            choice = Prompt.ask("\nEnter your choice", choices=["h", "d", "q"], default="q").lower()
+            choice = Prompt.ask(
+                "\nEnter your choice", choices=["h", "d", "q"], default="q"
+            ).lower()
 
             if choice == "q":
                 console.print("[yellow]Goodbye![/]")
@@ -340,7 +352,9 @@ def main(input_file: str | None = None):
                 display_result(success, key, output_path, console)
             else:  # Decrypt/Extract
                 key = Prompt.ask("Enter encryption key")
-                success, error_msg, output_path = process_file("extract", file_path, key)
+                success, error_msg, output_path = process_file(
+                    "extract", file_path, key
+                )
                 display_result(success, error_msg, output_path, console)
 
             Prompt.ask("\nPress Enter to continue...")
@@ -353,16 +367,10 @@ def main(input_file: str | None = None):
             console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
             time.sleep(2)
 
+        except (KeyboardInterrupt, EOFError):
+            Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
+
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) <= 1:
-        Console().print("[bold red]Error:[/] Input file must be provided as argument")
-        sys.exit(1)
-        
-    try:
-        main(sys.argv[1])
-    except (KeyboardInterrupt, EOFError):
-        Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
-    except Exception as e:
-        Console().print(f"\n[bold red]Fatal error:[/] {str(e)}")
+    # DO NOT MODIFY THIS PART
+    main()
