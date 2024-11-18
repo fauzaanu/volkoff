@@ -16,33 +16,33 @@ vk
 
 ## How Strong is the Encryption?
 
-Volkoff uses multiple layers of strong encryption and security measures:
+Volkoff uses industry-standard encryption and security measures:
 
-- AES-256 encryption for file contents
-- ECDSA with SECP256k1 curve (same as Bitcoin) for signatures
-- PBKDF2 key derivation with 1,000,000 iterations
-- Multiple entropy sources for key generation:
-  - System random (os.urandom)
-  - High-precision timestamps
-  - Process-specific data
-- Double-hashing of keys using SHA-512 and SHA-256
-- Unique salt for each encrypted file
+- AES-256-GCM (Galois/Counter Mode) for authenticated encryption
+- Cryptographically secure random key generation using os.urandom
+- 256-bit (32-byte) encryption keys
+- Unique 96-bit (12-byte) nonce for each encryption operation
+- Built-in authentication to detect tampering
+- Secure container format preserving file metadata
 
 ## Best Practices for Using Volkoff
 
 1. **Backup Your Keys**: The encryption key shown after hiding a file is the ONLY way to recover your data. Store it securely!
 
 2. **Secure Key Storage**:
-   - Never store keys in plain text
-   - Consider using a password manager
-   - Split keys across different secure locations for critical files
+   - Never store keys in plain text files
+   - Use a password manager to store encryption keys
+   - Keep backups of keys in secure locations
+   - Consider using a hardware security key or encrypted USB drive
 
 3. **File Management**:
    - Keep original files until you verify successful encryption/decryption
-   - Use meaningful filenames to identify encrypted content
+   - Use descriptive filenames that don't reveal sensitive content
    - Store encrypted files separately from their keys
+   - Regularly test your backup and recovery procedures
 
-4. **Testing**:
-   - Always test decryption of important files immediately after encryption
-   - Verify file integrity after decryption
-   - Practice recovery procedures regularly
+4. **Security Considerations**:
+   - Use strong, unique keys for each important file
+   - Don't share keys through insecure channels like email or chat
+   - Clear clipboard after copying keys
+   - Be cautious when decrypting files from untrusted sources
