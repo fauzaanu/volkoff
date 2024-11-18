@@ -15,7 +15,6 @@ from pathlib import Path
 
 import base58
 from cryptography.fernet import Fernet
-from safetensors import safe_open
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from ecdsa import SigningKey, SECP256k1
@@ -143,20 +142,17 @@ class OrionH:
         # Create output directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Save to safetensors file
-        tensors = {"encrypted_data": encrypted_data}
-        with safe_open(output_path, framework="numpy", mode="w") as f:
-            f.store_tensor("encrypted_data", encrypted_data)
-            f.write_metadata(metadata)
+        # Save to fake safetensors file
+        with open(output_path, 'wb') as f:
+            f.write(encrypted_data)
         
         return output_path
 
     def extract_file(self, safetensors_path, output_path):
         """Extract and decrypt hidden file from safetensors file"""
-        # Load the safetensors file
-        with safe_open(safetensors_path, framework="numpy") as f:
-            encrypted_data = f.get_tensor("encrypted_data")
-            metadata = f.metadata()
+        # Load the fake safetensors file
+        with open(safetensors_path, 'rb') as f:
+            encrypted_data = f.read()
         
         # Restore private key and derive public key
         self.private_key = SigningKey.from_string(bytes.fromhex(metadata["private_key"]), curve=SECP256k1)
@@ -203,10 +199,8 @@ def main():
             output_dir = Path('orion_output')
             output_dir.mkdir(exist_ok=True)
             
-            # Load metadata to get original filename
-            with safe_open(args.container, framework="numpy") as f:
-                metadata = f.metadata()
-            original_filename = metadata["filename"]
+            # Use a default filename for recovered files
+            original_filename = "recovered_file"
             output_path = output_dir / f"recovered_{original_filename}"
             orion.extract_file(args.container, output_path)
             print(f"File extracted successfully to {output_path}")
