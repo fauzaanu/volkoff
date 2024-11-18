@@ -24,7 +24,14 @@ from orionh.hide import hide_file
 
 
 class OrionH:
-    def __init__(self, encryption_key=None):
+    """
+    OrionH class for file encryption and hiding
+    
+    Args:
+        encryption_key (str, optional): The encryption key to use. If not provided,
+            a new random key will be generated.
+    """
+    def __init__(self, encryption_key: str | None = None):
         if encryption_key:
             # For extraction: use provided key
             self.encryption_key = encryption_key
