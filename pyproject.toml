@@ -21,7 +21,7 @@ dev-dependencies = [
 ]
 
 [project.scripts]
-vk = "volkoff:main.main"
+vk = "volkoff.main:main"
 
 [build-system]
 requires = ["hatchling"]
