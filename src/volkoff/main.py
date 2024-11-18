@@ -56,7 +56,7 @@ class VolkoffH:
                 "abcdefghijklmnopqrstuvwxyz"  # lowercase
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # uppercase
                 "0123456789"                   # numbers
-                "!@#$%^&*()-_=+[]{}|;:,.<>?"  # special chars
+                "!@#$%^&*()=+[]{}|;:,.<>?"  # special chars
             )
             key_chars = []
             for i in range(64):
