@@ -58,7 +58,7 @@ def process_file(
 ) -> tuple[bool, str, Path | None]:
     """Process file with progress animation"""
     try:
-        from .main import VolkoffH
+        from .main import Volkoff
 
         # Validate encryption key for extract operation
         if action == "extract" and not key:
@@ -77,7 +77,7 @@ def process_file(
             console=Console(),
         ) as progress:
             if action == "hide":
-                Volkoff = VolkoffH()
+                Volkoff = Volkoff()
                 task = progress.add_task("[cyan]Encrypting...", total=100)
                 for i in range(100):
                     progress.update(task, advance=1)
@@ -89,7 +89,7 @@ def process_file(
                 if not key:
                     return False, "No encryption key provided", None
 
-                Volkoff = VolkoffH(key)
+                Volkoff = Volkoff(key)
                 task = progress.add_task("[cyan]Decrypting...", total=100)
 
                 with open(file_path, "rb") as f:
