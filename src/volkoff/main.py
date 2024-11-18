@@ -51,13 +51,24 @@ class VolkoffH:
             mixed = hashlib.sha512(mixed + time_entropy).digest()
             mixed = hashlib.sha512(mixed + process_entropy).digest()
 
-            # Generate a 64-character key using the full ASCII printable range
-            charset = "".join([chr(x) for x in range(33, 127)])  # All printable ASCII
+            # Generate a 64-character key using a balanced character set
+            charset = (
+                "abcdefghijklmnopqrstuvwxyz"  # lowercase
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  # uppercase
+                "0123456789"                   # numbers
+                "!@#$%^&*()-_=+[]{}|;:,.<>?"  # special chars
+            )
             key_chars = []
             for i in range(64):
-                # Use 6 bytes of entropy per character to avoid modulo bias
-                index = int.from_bytes(mixed[i * 6 : (i + 1) * 6], "big")
-                key_chars.append(charset[index % len(charset)])
+                # Use rejection sampling to avoid modulo bias
+                while True:
+                    # Use 4 bytes (32 bits) of entropy per attempt
+                    value = int.from_bytes(mixed[i * 4 : (i * 4) + 4], "big")
+                    index = value % len(charset)
+                    # Only accept if the value would give an unbiased result
+                    if value - index <= (2**32 - len(charset)):
+                        key_chars.append(charset[index])
+                        break
 
             self.encryption_key = "".join(key_chars)
             # Double hash the key for extra security
