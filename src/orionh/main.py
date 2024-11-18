@@ -256,8 +256,8 @@ def main():
     
     try:
         while True:
-        console.clear()
-        layout = Layout()
+            console.clear()
+            layout = Layout()
         
         # Add file listing section
         files_panel = Panel(
@@ -323,10 +323,16 @@ def main():
         if Prompt.ask("\nPress Enter to continue..."):
             continue
 
+    except Exception as e:
+        console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
+        time.sleep(2)
+
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         Console().print("\n[yellow]Program terminated by user. Goodbye![/yellow]")
+    except Exception as e:
+        Console().print(f"\n[bold red]Fatal error:[/] {str(e)}")
 
