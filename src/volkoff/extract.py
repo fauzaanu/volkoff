@@ -6,13 +6,9 @@ def extract_file(Volkoff, safetensors_path: str | Path, output_path: Path) -> No
     with open(safetensors_path, 'rb') as f:
         stored_data = f.read()
 
-    # Split private key, extension and encrypted data
-    stored_key, rest = stored_data.split(b'###KEY###', 1)
-    original_ext, encrypted_data = rest.split(b'###EXT###', 1)
-    stored_key = stored_key.decode()
+    # Split extension and encrypted data
+    original_ext, encrypted_data = stored_data.split(b'###EXT###', 1)
     original_ext = original_ext.decode()
-
-    # Key verification happens automatically during decryption
 
     # Decrypt the data
     decrypted_data = Volkoff.decrypt_file(encrypted_data)
