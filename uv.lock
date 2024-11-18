@@ -4022,7 +4022,7 @@ wheels = [
 
 [[package]]
 name = "volkoff"
-version = "0.1.4"
+version = "0.1.41"
 source = { editable = "." }
 dependencies = [
     { name = "base58" },

@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from .main import VolkoffH
+from .main import Volkoff
 
 class TestVolkoffH(unittest.TestCase):
     def setUp(self):
@@ -12,7 +12,7 @@ class TestVolkoffH(unittest.TestCase):
         self.test_file.write_bytes(b"Test content")
 
         # Create VolkoffH instance with a fixed key for testing
-        self.Volkoff = VolkoffH("TEST_KEY_123")
+        self.Volkoff = Volkoff("TEST_KEY_123")
 
         # Create temporary directory for output files
         self.tmp_path = Path(tempfile.mkdtemp())
@@ -32,7 +32,7 @@ class TestVolkoffH(unittest.TestCase):
 
     def test_encryption_key_generation(self):
         """Test that encryption keys are generated correctly"""
-        Volkoff = VolkoffH()
+        Volkoff = Volkoff()
         self.assertIsInstance(Volkoff.encryption_key, str)
         self.assertGreater(len(Volkoff.encryption_key), 0)
 
@@ -53,11 +53,11 @@ class TestVolkoffH(unittest.TestCase):
     def test_incorrect_key(self):
         """Test that extraction fails with wrong key"""
         # Hide with one key
-        Volkoff1 = VolkoffH("KEY1")
+        Volkoff1 = Volkoff("KEY1")
         output_path = Volkoff1.hide_file(self.test_file)
 
         # Try to extract with different key
-        Volkoff2 = VolkoffH("KEY2")
+        Volkoff2 = Volkoff("KEY2")
         extract_path = self.tmp_path / f"{self.test_file.stem}{self.test_file.suffix}"
 
         with self.assertRaisesRegex(ValueError, "Incorrect decryption key"):

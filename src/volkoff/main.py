@@ -15,15 +15,15 @@ from .tui import (
 )
 
 
-class VolkoffH:
+class Volkoff:
     """
-    VolkoffH class for file encryption and hiding using AES-GCM
-    
+    Volkoff class for file encryption and hiding using AES-GCM
+
     Args:
         encryption_key (str, optional): The 32-byte hex key to use. If not provided,
             a new random key will be generated.
     """
-    
+
     def __init__(self, encryption_key: str | None = None):
         if encryption_key:
             # For extraction: use provided key
@@ -47,43 +47,43 @@ class VolkoffH:
         nonce = os.urandom(12)
         encrypted_container = self.aesgcm.encrypt(nonce, container, None)
         return nonce + encrypted_container
-    
+
     def decrypt_container(self, encrypted_container: bytes) -> tuple[bytes, str, bytes]:
         """Decrypt the container and return components"""
         nonce = encrypted_container[:12]
         ciphertext = encrypted_container[12:]
-        
+
         try:
             decrypted = self.aesgcm.decrypt(nonce, ciphertext, None)
             private_key, file_ext, file_data = decrypted.split(b"|", 2)
             return private_key, file_ext.decode(), file_data
         except Exception as e:
             raise ValueError(f"Container decryption failed: {str(e)}")
-            
+
     def encrypt_file(self, file_path):
         """Encrypt a file using AES-GCM"""
         with open(file_path, "rb") as file:
             file_data = file.read()
-            
+
         # Generate nonce
         nonce = os.urandom(12)
-        
+
         # Encrypt data with authenticated encryption
         encrypted_data = self.aesgcm.encrypt(nonce, file_data, None)
-        
+
         # Combine nonce and encrypted data
         return nonce + encrypted_data
-        
+
     def decrypt_file(self, encrypted_data):
         """Decrypt file using AES-GCM"""
         try:
             # Split nonce and ciphertext
             nonce = encrypted_data[:12]
             ciphertext = encrypted_data[12:]
-            
+
             # Decrypt and authenticate data
             decrypted_data = self.aesgcm.decrypt(nonce, ciphertext, None)
-            
+
             return decrypted_data
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
