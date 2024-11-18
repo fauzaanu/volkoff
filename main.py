@@ -256,9 +256,19 @@ def main():
             if not args.container or not args.key:
                 parser.error("extract action requires --container and --key arguments")
             
-            # Extract original filename from metadata
             orion = OrionH(args.key)
-            orion.generate_key()
+            
+            # First read the container to get the original filename
+            with open(args.container, 'rb') as container:
+                content = container.read()
+                if b'###ORION###' not in content:
+                    raise ValueError("No hidden content found")
+                hidden_content = content.split(b'###ORION###')[1].strip()
+                meta_part = hidden_content.split(b'###KEY###')[0]
+                meta_info = meta_part.split(b'###META###')[1].decode()
+                _, original_filename = meta_info.split('|')
+            
+            # Now extract with the original filename
             output_path = f"recovered_{original_filename}"
             orion.extract_file(args.container, output_path)
             print(f"File extracted successfully to {output_path}")
