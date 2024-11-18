@@ -1,7 +1,5 @@
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
-import os
-import glob
 import time
 from pathlib import Path
 
