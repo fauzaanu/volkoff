@@ -178,7 +178,7 @@ def main():
         console.print(Panel(key_text, title="Security Warning", border_style="red"))
 
         output_path = orion.hide_file(args.input_file)
-        console.print(f"\n✨ File hidden successfully in:", style="bold green")
+        console.print("\n✨ File hidden successfully in:", style="bold green")
         console.print(str(output_path), style="blue underline")
 
     elif args.action == "extract":
