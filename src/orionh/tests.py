@@ -2,8 +2,6 @@ import tempfile
 import unittest
 from pathlib import Path
 from orionh.main import OrionH
-from orionh.hide import hide_file
-from orionh.extract import extract_file
 
 class TestOrionH(unittest.TestCase):
     def setUp(self):
