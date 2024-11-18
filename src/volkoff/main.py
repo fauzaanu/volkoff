@@ -210,32 +210,6 @@ def main():
                         time.sleep(1)
                         continue
 
-                if not files and not dirs:
-                    continue
-
-                try:
-                    file_index = int(Prompt.ask("\nEnter number", default="1"))
-                    
-                    # Handle parent directory
-                    if file_index == 0 and current_path != current_path.root:
-                        current_dir = current_dir.parent
-                        continue
-                        
-                    # Handle directory selection
-                    if file_index <= len(dirs):
-                        current_dir = dirs[file_index - 1]
-                        continue
-                        
-                    # Handle file selection
-                    if file_index <= len(dirs) + len(files):
-                        file_path = files[file_index - len(dirs) - 1]
-                        break
-                        
-                    raise ValueError("Invalid selection!")
-                except (IndexError, ValueError) as e:
-                    console.print(f"[bold red]Error:[/] {str(e)}")
-                    time.sleep(1)
-                    continue
 
             if choice == "h":  # Hide
                 success, key, output_path = process_file("hide", file_path)
