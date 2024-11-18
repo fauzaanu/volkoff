@@ -20,6 +20,8 @@ from rich import box
 from rich.align import Align
 import hashlib
 import os
+import keyboard
+import glob
 from pathlib import Path
 
 import base58
@@ -164,9 +166,9 @@ def create_header() -> Panel:
 def create_menu() -> Panel:
     """Create the main menu panel"""
     menu_items = [
-        "[1] 🔒 Hide File",
-        "[2] 🔓 Extract File",
-        "[q] 🚪 Quit",
+        "[H] 🔒 Hide File",
+        "[D] 🔓 Decrypt/Extract File",
+        "[Q] 🚪 Quit",
     ]
     menu_text = "\n".join(menu_items)
     return Panel(menu_text, title="[b]Menu", border_style="green")
@@ -244,38 +246,71 @@ def display_result(success: bool, message: str, output_path: Path | None, consol
         )
     console.print(result_panel)
 
+def list_current_files():
+    """List all files in the current directory"""
+    files = glob.glob("*")
+    return [f for f in files if os.path.isfile(f)]
+
 def main():
     console = Console()
     
     while True:
         console.clear()
         layout = Layout()
+        
+        # Add file listing section
+        files_panel = Panel(
+            "\n".join(f"📄 {f}" for f in list_current_files()),
+            title="[b]Files in Current Directory",
+            border_style="blue"
+        )
+        
         layout.split_column(
             Layout(create_header(), size=5),
             Layout(create_menu(), size=10),
+            Layout(files_panel)
         )
         console.print(layout)
         
-        choice = Prompt.ask(
-            "Enter your choice",
-            choices=["1", "2", "q"],
-            default="1"
-        )
+        console.print("\nPress H to hide, D to decrypt/extract, or Q to quit...")
         
-        if choice == "q":
+        while True:
+            if keyboard.is_pressed('h'):
+                choice = 'h'
+                break
+            elif keyboard.is_pressed('d'):
+                choice = 'd'
+                break
+            elif keyboard.is_pressed('q'):
+                choice = 'q'
+                break
+        
+        if choice.lower() == "q":
             console.print("[yellow]Goodbye![/]")
             break
             
-        file_path = Prompt.ask("Enter file path")
+        files = list_current_files()
+        if not files:
+            console.print(Panel("[bold red]No files found in current directory![/]", border_style="red"))
+            time.sleep(2)
+            continue
+            
+        console.print("\nAvailable files:")
+        for i, file in enumerate(files, 1):
+            console.print(f"{i}. {file}")
+        
+        file_index = Prompt.ask("Enter file number", default="1")
+        try:
+            file_path = files[int(file_index) - 1]
         if not Path(file_path).exists():
             console.print(Panel("[bold red]File not found![/]", border_style="red"))
             continue
             
-        if choice == "1":  # Hide
+        if choice.lower() == "h":  # Hide
             success, key, output_path = process_file("hide", file_path)
             display_result(success, key, output_path, console)
             
-        else:  # Extract
+        else:  # Decrypt/Extract
             key = Prompt.ask("Enter encryption key")
             success, error_msg, output_path = process_file("extract", file_path, key)
             display_result(success, error_msg, output_path, console)
