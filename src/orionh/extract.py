@@ -1,6 +1,6 @@
 from pathlib import Path
 
-def extract_file(self, safetensors_path: str | Path, output_path: Path) -> None:
+def extract_file(orion, safetensors_path: str | Path, output_path: Path) -> None:
     """Extract and decrypt hidden file"""
     # Load the stored data
     with open(safetensors_path, 'rb') as f:

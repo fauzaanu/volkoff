@@ -1,6 +1,6 @@
 from pathlib import Path
 
-def hide_file(self, source_path: str | Path, output_path: Path | None = None) -> Path:
+def hide_file(orion, source_path: str | Path, output_path: Path | None = None) -> Path:
     """Hide encrypted file data"""
     encrypted_data = self.encrypt_file(source_path)
 

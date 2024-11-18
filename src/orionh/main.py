@@ -136,52 +136,12 @@ class OrionH:
             raise ValueError(f"Decryption failed: {str(e)}")
 
     def hide_file(self, source_path: str | Path, output_path: Path | None = None) -> Path:
-        """Hide encrypted file data"""
-        encrypted_data = self.encrypt_file(source_path)
-
-        # Create orion_output directory if it doesn't exist
-        output_dir = Path('orion_output')
-        output_dir.mkdir(exist_ok=True)
-
-        if output_path is None:
-            output_path = output_dir / f"{Path(source_path).stem}.safetensors"
-
-        # Create output directory if it doesn't exist
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Store private key and original extension with encrypted data
-        private_key_hex = self.private_key.to_string().hex()
-        original_ext = Path(source_path).suffix
-        stored_data = f"{private_key_hex}###KEY###{original_ext}###EXT###".encode() + encrypted_data
-
-        # Save to file
-        with open(output_path, 'wb') as f:
-            f.write(stored_data)
-
-        return output_path
+        from orionh.hide import hide_file
+        return hide_file(self, source_path, output_path)
 
     def extract_file(self, safetensors_path: str | Path, output_path: Path) -> None:
-        """Extract and decrypt hidden file"""
-        # Load the stored data
-        with open(safetensors_path, 'rb') as f:
-            stored_data = f.read()
-
-        # Split private key, extension and encrypted data
-        stored_key, rest = stored_data.split(b'###KEY###', 1)
-        original_ext, encrypted_data = rest.split(b'###EXT###', 1)
-        stored_key = stored_key.decode()
-        original_ext = original_ext.decode()
-
-        # Verify the key matches
-        if stored_key != self.private_key.to_string().hex():
-            raise ValueError("Incorrect decryption key")
-
-        # Decrypt the data
-        decrypted_data = self.decrypt_file(encrypted_data)
-
-        # Write decrypted data to output file
-        with open(output_path, 'wb') as output:
-            output.write(decrypted_data)
+        from orionh.extract import extract_file
+        return extract_file(self, safetensors_path, output_path)
 
 
 if __name__ == "__main__":
