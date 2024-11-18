@@ -197,8 +197,14 @@ if __name__ == '__main__':
         if not args.key:
             parser.error("extract action requires an encryption key")
         orion = OrionH(args.key)
-        # Get the original file extension from the safetensors filename
-        # Remove .safetensors and get original name
+        # First read the original extension from the safetensors file
+        with open(args.input_file, 'rb') as f:
+            stored_data = f.read()
+        _, rest = stored_data.split(b'###KEY###', 1)
+        original_ext, _ = rest.split(b'###EXT###', 1)
+        original_ext = original_ext.decode()
+        
+        # Now create output path with the original extension
         original_name = Path(args.input_file).stem
         output_path = output_dir / f"recovered_{original_name}{original_ext}"
         orion.extract_file(args.input_file, output_path)
