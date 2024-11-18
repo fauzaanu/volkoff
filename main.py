@@ -165,7 +165,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OrionH - File encryption and hiding tool')
     parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
     parser.add_argument('--source', help='Source file path (for hide)')
-    parser.add_argument('--container', help='Container file path (for extract)')
+    parser.add_argument('--encrypted-file', help='Encrypted file path (for extract)')
     parser.add_argument('--key', help='Encryption key (required for extraction)')
 
     args = parser.parse_args()
@@ -185,8 +185,8 @@ if __name__ == '__main__':
         print(f"\nFile hidden successfully in {output_path}")
 
     elif args.action == 'extract':
-        if not args.container or not args.key:
-            parser.error("extract action requires --container and --key arguments")
+        if not args.encrypted_file or not args.key:
+            parser.error("extract action requires --encrypted-file and --key arguments")
 
         orion = OrionH(args.key)
 
@@ -197,5 +197,5 @@ if __name__ == '__main__':
         # Use a default filename for recovered files
         original_filename = "recovered_file"
         output_path = output_dir / f"recovered_{original_filename}"
-        orion.extract_file(args.container, output_path)
+        orion.extract_file(args.encrypted_file, output_path)
         print(f"File extracted successfully to {output_path}")
