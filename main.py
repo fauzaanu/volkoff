@@ -9,6 +9,7 @@ This tool will implement an encryption that is impossible to break inspired by t
 import os
 import sys
 import argparse
+from pathlib import Path
 import hashlib
 from PIL import Image
 import numpy as np
@@ -121,8 +122,12 @@ class OrionH:
         random_array = np.random.randint(0, 255, (*img_size, 3), dtype=np.uint8)
         img = Image.fromarray(random_array)
         
-        # Save to a temporary file
-        container_path = f'container_{index}.png' if index is not None else 'container.png'
+        # Create orion_output directory if it doesn't exist
+        output_dir = Path('orion_output')
+        output_dir.mkdir(exist_ok=True)
+        
+        # Save to a temporary file in the output directory
+        container_path = output_dir / (f'container_{index}.png' if index is not None else 'container.png')
         img.save(container_path)
         return container_path
 
@@ -269,7 +274,11 @@ def main():
                 _, original_filename = meta_info.split('|')
             
             # Now extract with the original filename
-            output_path = f"recovered_{original_filename}"
+            # Create orion_output directory if it doesn't exist
+            output_dir = Path('orion_output')
+            output_dir.mkdir(exist_ok=True)
+            
+            output_path = output_dir / f"recovered_{original_filename}"
             orion.extract_file(args.container, output_path)
             print(f"File extracted successfully to {output_path}")
             
