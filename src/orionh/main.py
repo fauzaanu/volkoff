@@ -9,6 +9,9 @@ This tool will implement an encryption that is impossible to break inspired by t
 
 import argparse
 import base64
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 import hashlib
 import os
 from pathlib import Path
@@ -159,31 +162,51 @@ def main():
     output_dir = Path("orion_output")
     output_dir.mkdir(exist_ok=True)
 
+    console = Console()
+
     if args.action == "hide":
         orion = OrionH()  # Will generate a random encryption key internally
-        print("\nIMPORTANT: Save this encryption key securely (e.g., in Bitwarden).")
-        print("You will need it to decrypt your files later!")
-        print(f"\nEncryption Key: {orion.encryption_key}\n")
+        
+        # Create warning panel for key
+        key_text = Text()
+        key_text.append("IMPORTANT: ", style="bold red")
+        key_text.append("Save this encryption key securely (e.g., in Bitwarden).\n")
+        key_text.append("You will need it to decrypt your files later!\n\n")
+        key_text.append("Encryption Key: ", style="bold yellow")
+        key_text.append(orion.encryption_key, style="bold green")
+        
+        console.print(Panel(key_text, title="Security Warning", border_style="red"))
 
         output_path = orion.hide_file(args.input_file)
-        print(f"\nFile hidden successfully in {output_path}")
+        console.print(f"\n✨ File hidden successfully in:", style="bold green")
+        console.print(str(output_path), style="blue underline")
 
     elif args.action == "extract":
         if not args.key:
-            parser.error("extract action requires an encryption key")
-        orion = OrionH(args.key)
-        # First read the original extension from the safetensors file
-        with open(args.input_file, "rb") as f:
-            stored_data = f.read()
-        _, rest = stored_data.split(b"###KEY###", 1)
-        original_ext, _ = rest.split(b"###EXT###", 1)
-        original_ext = original_ext.decode()
+            console.print("❌ Error: extract action requires an encryption key", style="bold red")
+            return
+            
+        try:
+            orion = OrionH(args.key)
+            # First read the original extension from the safetensors file
+            with open(args.input_file, "rb") as f:
+                stored_data = f.read()
+            _, rest = stored_data.split(b"###KEY###", 1)
+            original_ext, _ = rest.split(b"###EXT###", 1)
+            original_ext = original_ext.decode()
 
-        # Now create output path with the original extension
-        original_name = Path(args.input_file).stem
-        output_path = output_dir / f"recovered_{original_name}{original_ext}"
-        orion.extract_file(args.input_file, output_path)
-        print(f"File extracted successfully to {output_path}")
+            # Now create output path with the original extension
+            original_name = Path(args.input_file).stem
+            output_path = output_dir / f"recovered_{original_name}{original_ext}"
+            orion.extract_file(args.input_file, output_path)
+            
+            console.print("\n✅ File extracted successfully to:", style="bold green")
+            console.print(str(output_path), style="blue underline")
+            
+        except ValueError as e:
+            console.print(f"\n❌ Error: {str(e)}", style="bold red")
+        except Exception as e:
+            console.print(f"\n❌ Unexpected error: {str(e)}", style="bold red")
 
 
 if __name__ == "__main__":
