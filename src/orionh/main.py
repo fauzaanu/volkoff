@@ -302,8 +302,12 @@ def main():
         file_index = Prompt.ask("Enter file number", default="1")
         try:
             file_path = files[int(file_index) - 1]
-        if not Path(file_path).exists():
-            console.print(Panel("[bold red]File not found![/]", border_style="red"))
+            if not Path(file_path).exists():
+                console.print(Panel("[bold red]File not found![/]", border_style="red"))
+                continue
+        except (IndexError, ValueError):
+            console.print(Panel("[bold red]Invalid file number![/]", border_style="red"))
+            time.sleep(2)
             continue
             
         if choice.lower() == "h":  # Hide
