@@ -69,7 +69,7 @@ def process_file(
                 original_ext = original_ext.decode()
 
                 original_name = Path(file_path).stem
-                output_path = output_dir / f"recovered_{original_name}{original_ext}"
+                output_path = output_dir / f"{original_name}{original_ext}"
 
                 for i in range(100):
                     progress.update(task, advance=1)
