@@ -132,6 +132,9 @@ class OrionH:
 
     def hide_file(self, source_path, container_path=None):
         """Hide encrypted file data inside another file, splitting if necessary"""
+        if not self.private_key:
+            self.generate_key()
+            
         encrypted_data = self.encrypt_file(source_path)
         chunks = self._split_data(encrypted_data)
         total_chunks = len(chunks)
@@ -151,10 +154,10 @@ class OrionH:
             # Write chunk with metadata
             with open(current_container, 'ab') as container:
                 container.write(b'\n###ORION###\n')
-                # Add chunk metadata and keys
+                # Add chunk metadata and signing key
                 metadata = f"{i+1}/{total_chunks}".encode()
-                key_data = self.private_key.to_string() + self.public_key.to_string()
-                container.write(b'###META###' + metadata + b'###KEYS###' + key_data + b'###DATA###')
+                private_key_data = self.private_key.to_string()
+                container.write(b'###META###' + metadata + b'###KEY###' + private_key_data + b'###DATA###')
                 container.write(chunk)
         
         return container_paths
@@ -181,18 +184,17 @@ class OrionH:
                 if b'###ORION###' not in content:
                     raise ValueError(f"No hidden content found in {current_path}")
                 
-                # Extract chunk metadata, keys and data
+                # Extract chunk metadata, key and data
                 hidden_content = content.split(b'###ORION###')[1].strip()
                 if b'###META###' in hidden_content:
-                    meta_part, rest = hidden_content.split(b'###KEYS###')
+                    meta_part, rest = hidden_content.split(b'###KEY###')
                     key_data, data = rest.split(b'###DATA###')
                     chunk_info = meta_part.split(b'###META###')[1].decode()
                     current, total = map(int, chunk_info.split('/'))
                     total_chunks = total
                     
-                    # Restore keys
-                    key_length = len(key_data) // 2
-                    self.private_key = SigningKey.from_string(key_data[:key_length], curve=SECP256k1)
+                    # Restore private key and derive public key
+                    self.private_key = SigningKey.from_string(key_data, curve=SECP256k1)
                     self.public_key = self.private_key.get_verifying_key()
                     
                     all_data.append((current - 1, data))  # Store with index for proper ordering
