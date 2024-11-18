@@ -138,9 +138,10 @@ class OrionH:
         # Create output directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Store private key with encrypted data
+        # Store private key and original extension with encrypted data
         private_key_hex = self.private_key.to_string().hex()
-        stored_data = f"{private_key_hex}###KEY###".encode() + encrypted_data
+        original_ext = Path(source_path).suffix
+        stored_data = f"{private_key_hex}###KEY###{original_ext}###EXT###".encode() + encrypted_data
 
         # Save to file
         with open(output_path, 'wb') as f:
@@ -154,9 +155,11 @@ class OrionH:
         with open(safetensors_path, 'rb') as f:
             stored_data = f.read()
 
-        # Split private key and encrypted data
-        stored_key, encrypted_data = stored_data.split(b'###KEY###', 1)
+        # Split private key, extension and encrypted data
+        stored_key, rest = stored_data.split(b'###KEY###', 1)
+        original_ext, encrypted_data = rest.split(b'###EXT###', 1)
         stored_key = stored_key.decode()
+        original_ext = original_ext.decode()
 
         # Verify the key matches
         if stored_key != self.private_key.to_string().hex():
@@ -194,6 +197,9 @@ if __name__ == '__main__':
         if not args.key:
             parser.error("extract action requires an encryption key")
         orion = OrionH(args.key)
-        output_path = output_dir / f"recovered_{Path(args.input_file).stem}"
+        # Get the original file extension from the safetensors filename
+        # Remove .safetensors and get original name
+        original_name = Path(args.input_file).stem
+        output_path = output_dir / f"recovered_{original_name}{original_ext}"
         orion.extract_file(args.input_file, output_path)
         print(f"File extracted successfully to {output_path}")
