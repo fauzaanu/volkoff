@@ -287,9 +287,10 @@ def main(input_file: str | None = None):
                 console.print("[yellow]Goodbye![/]")
                 return
 
-            file_path = input_file
-            if not file_path:
-                # Show files only after choice is made
+            # Show files only if no input file was provided
+            if input_file:
+                file_path = input_file
+            else:
                 files = list_current_files()
                 if not files:
                     console.print(
