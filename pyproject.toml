@@ -4,9 +4,13 @@ version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-packages = [
-    { include = "volkoff", from = "src" }
-]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.packages.find]
+where = ["src"]
+include = ["volkoff*"]
 dependencies = [
     "base58>=2.1.1",
     "cryptography>=43.0.3",
