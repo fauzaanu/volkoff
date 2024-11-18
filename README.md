@@ -45,4 +45,9 @@ Important Security Notes:
 
 ## Disclaimer
 
-Make sure to 
+The author and contributors are not responsible for any data loss or corruption that may occur while using this software. Users are strongly advised to:
+
+- Keep secure backups of all important files before encryption
+- Safely store encryption keys in multiple locations
+- Test the decryption process on non-critical files first
+- Verify successful decryption immediately after encryption
