@@ -150,16 +150,11 @@ class OrionH:
 
     def extract_file(self, safetensors_path, output_path):
         """Extract and decrypt hidden file from safetensors file"""
-        # Load the fake safetensors file
+        # Load the encrypted data directly
         with open(safetensors_path, 'rb') as f:
             encrypted_data = f.read()
         
-        # Restore private key and derive public key
-        self.private_key = SigningKey.from_string(bytes.fromhex(metadata["private_key"]), curve=SECP256k1)
-        self.public_key = self.private_key.get_verifying_key()
-        
-        # Get encrypted data and decrypt
-        encrypted_data = tensors["encrypted_data"]
+        # Decrypt the data
         decrypted_data = self.decrypt_file(encrypted_data)
         
         # Write decrypted data to output file
