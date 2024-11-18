@@ -1,10 +1,7 @@
 import base64
 import time
 from rich.console import Console
-from rich.panel import Panel
 from rich.prompt import Prompt
-from rich import box
-from rich.table import Table
 import hashlib
 import os
 from pathlib import Path
