@@ -286,15 +286,17 @@ def main(input_file: str | None = None):
                     Layout(notification, size=3),
                     Layout(create_menu(), size=6),
                 )
+                console.print(layout)
+                # Automatically proceed with hiding for provided file
+                choice = "h"
             else:
                 layout.split_column(
                     Layout(create_header(), size=4),
                     Layout(create_menu(), size=6),
                 )
-            console.print(layout)
-
-            # Get user choice
-            choice = Prompt.ask("\nEnter your choice", choices=["h", "d", "q"], default="q").lower()
+                console.print(layout)
+                # Get user choice only if no input file
+                choice = Prompt.ask("\nEnter your choice", choices=["h", "d", "q"], default="q").lower()
 
             if choice == "q":
                 console.print("[yellow]Goodbye![/]")
