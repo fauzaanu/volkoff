@@ -163,9 +163,16 @@ class OrionH:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OrionH - File encryption and hiding tool')
-    parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
-    parser.add_argument('input_file', help='Source file for hide, encrypted file for extract')
-    parser.add_argument('key', nargs='?', help='Encryption key (only needed for extract)')
+    subparsers = parser.add_subparsers(dest='action', required=True)
+    
+    # Hide command
+    hide_parser = subparsers.add_parser('hide', help='Hide and encrypt a file')
+    hide_parser.add_argument('input_file', help='Source file to hide')
+    
+    # Extract command
+    extract_parser = subparsers.add_parser('extract', help='Extract and decrypt a file')
+    extract_parser.add_argument('input_file', help='Encrypted file to extract')
+    extract_parser.add_argument('--key', required=True, help='Encryption key')
 
     args = parser.parse_args()
 
@@ -184,9 +191,6 @@ if __name__ == '__main__':
         print(f"\nFile hidden successfully in {output_path}")
 
     elif args.action == 'extract':
-        if not args.key:
-            parser.error("extract action requires an encryption key")
-            
         orion = OrionH(args.key)
         output_path = output_dir / f"recovered_{Path(args.input_file).stem}"
         orion.extract_file(args.input_file, output_path)
