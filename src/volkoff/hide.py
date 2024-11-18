@@ -14,9 +14,10 @@ def hide_file(Volkoff, source_path: str | Path, output_path: Path | None = None)
     # Create output directory if it doesn't exist
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Store private key and original extension with encrypted data
+    # Store encrypted private key and original extension with encrypted data
     original_ext = Path(source_path).suffix
-    stored_data = f"{Volkoff.encryption_key}###KEY###{original_ext}###EXT###".encode() + encrypted_data
+    encrypted_private_key = Volkoff.encrypt_private_key()
+    stored_data = encrypted_private_key + b"###KEY###" + original_ext.encode() + b"###EXT###" + encrypted_data
 
     # Save to file
     with open(output_path, 'wb') as f:

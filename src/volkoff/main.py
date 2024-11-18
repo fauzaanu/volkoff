@@ -34,9 +34,19 @@ class VolkoffH:
             except ValueError as e:
                 raise ValueError(f"Invalid key format: {str(e)}")
         else:
-            # For hiding: generate new random 32-byte key
-            self.key = os.urandom(32)
+            # For hiding: generate new random keys
+            self.key = os.urandom(32)  # Main encryption key
+            self.key_encryption_key = os.urandom(32)  # Key to encrypt the private key
             self.encryption_key = self.key.hex()
+            
+            # Create AESGCM instance for key encryption
+            self.key_aesgcm = AESGCM(self.key_encryption_key)
+            
+    def encrypt_private_key(self):
+        """Encrypt the private key for storage"""
+        nonce = os.urandom(12)
+        encrypted_key = self.key_aesgcm.encrypt(nonce, self.key, None)
+        return nonce + encrypted_key
             
         self.aesgcm = AESGCM(self.key)
             
