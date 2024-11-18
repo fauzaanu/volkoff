@@ -156,11 +156,12 @@ class OrionH:
 
             container_paths.append(current_container)
 
-            # Write chunk with metadata
+            # Write chunk with metadata and next container info
             with open(current_container, 'ab') as container:
                 container.write(b'\n###ORION###\n')
-                # Add chunk metadata, original filename, and signing key
-                metadata = f"{i+1}/{total_chunks}|{os.path.basename(source_path)}".encode()
+                # Add next container info if this isn't the last chunk
+                next_container = f"{base}_{i+1}{ext}" if i < total_chunks - 1 else "END"
+                metadata = f"{os.path.basename(source_path)}|{next_container}".encode()
                 private_key_data = self.private_key.to_string()
                 container.write(b'###META###' + metadata + b'###KEY###' + private_key_data + b'###DATA###')
                 container.write(chunk)
@@ -169,69 +170,42 @@ class OrionH:
 
     def extract_file(self, container_path, output_path):
         """Extract and decrypt hidden file from one or more containers"""
-        # Check if we have multiple containers
-        base, ext = os.path.splitext(container_path)
         all_data = []
-        chunk_count = 0
-        total_chunks = None
-
+        current_path = container_path
+        
         while True:
-            try:
-                # Handle paths for chunked files
-                container_dir = os.path.dirname(container_path)
-                container_name = os.path.basename(container_path)
-                base, ext = os.path.splitext(container_name)
-                
-                # Remove any existing _0 suffix for the first file
-                if base.endswith('_0'):
-                    base = base[:-2]
-                
-                current_path = os.path.join(container_dir, f"{base}_{chunk_count}{ext}" if chunk_count > 0 else f"{base}_0{ext}")
-                if not os.path.exists(current_path):
-                    if chunk_count == 0:
-                        raise ValueError(f"Container file not found: {current_path}")
-                    break
+            if not os.path.exists(current_path):
+                raise ValueError(f"Container file not found: {current_path}")
 
-                with open(current_path, 'rb') as container:
-                    content = container.read()
+            with open(current_path, 'rb') as container:
+                content = container.read()
 
-                if b'###ORION###' not in content:
-                    raise ValueError(f"No hidden content found in {current_path}")
+            if b'###ORION###' not in content:
+                raise ValueError(f"No hidden content found in {current_path}")
 
-                # Extract chunk metadata, key and data
-                hidden_content = content.split(b'###ORION###')[1].strip()
-                if b'###META###' in hidden_content:
-                    meta_part, rest = hidden_content.split(b'###KEY###')
-                    key_data, data = rest.split(b'###DATA###')
-                    meta_info = meta_part.split(b'###META###')[1].decode()
-                    chunk_info, original_filename = meta_info.split('|')
-                    current, total = map(int, chunk_info.split('/'))
-                    total_chunks = total
+            # Extract metadata, key and data
+            hidden_content = content.split(b'###ORION###')[1].strip()
+            meta_part, rest = hidden_content.split(b'###KEY###')
+            key_data, data = rest.split(b'###DATA###')
+            meta_info = meta_part.split(b'###META###')[1].decode()
+            original_filename, next_container = meta_info.split('|')
 
-                    # Restore private key and derive public key
-                    self.private_key = SigningKey.from_string(key_data, curve=SECP256k1)
-                    self.public_key = self.private_key.get_verifying_key()
+            # Restore private key and derive public key
+            self.private_key = SigningKey.from_string(key_data, curve=SECP256k1)
+            self.public_key = self.private_key.get_verifying_key()
 
-                    all_data.append((current - 1, data))  # Store with index for proper ordering
-                else:
-                    # Single file case
-                    all_data.append((0, hidden_content))
-                    break
+            all_data.append(data)
 
-                chunk_count += 1
-
-            except Exception as e:
-                if chunk_count == 0:
-                    raise e
+            # Check if this is the last container
+            if next_container == "END":
                 break
 
-        # Combine and decrypt data
-        if len(all_data) > 1:
-            # Sort by chunk index and combine
-            all_data.sort(key=lambda x: x[0])
-            combined_data = b''.join(chunk[1] for chunk in all_data)
-        else:
-            combined_data = all_data[0][1]
+            # Update path to next container
+            container_dir = os.path.dirname(current_path)
+            current_path = os.path.join(container_dir, next_container)
+
+        # Combine all data chunks
+        combined_data = b''.join(all_data)
 
         decrypted_data = self.decrypt_file(combined_data)
 
