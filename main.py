@@ -163,18 +163,20 @@ class OrionH:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OrionH - File encryption and hiding tool')
-    parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
-    parser.add_argument('--source', help='Source file path (for hide)')
-    parser.add_argument('--file', help='Encrypted file path (for extract)')
-    parser.add_argument('--key', help='Encryption key (required for extraction)', type=str)
+    subparsers = parser.add_subparsers(dest='action', required=True)
+    
+    # Hide command
+    hide_parser = subparsers.add_parser('hide', help='Hide and encrypt a file')
+    hide_parser.add_argument('--source', required=True, help='Source file path')
+    
+    # Extract command
+    extract_parser = subparsers.add_parser('extract', help='Extract and decrypt a file')
+    extract_parser.add_argument('--file', required=True, help='Encrypted file path')
+    extract_parser.add_argument('key', help='Encryption key')
 
     args = parser.parse_args()
 
-
     if args.action == 'hide':
-        if not args.source:
-            parser.error("hide action requires --source argument")
-
         orion = OrionH()
         orion.generate_key()
         print("\nIMPORTANT: Save this encryption key securely (e.g., in Bitwarden).")
@@ -185,8 +187,6 @@ if __name__ == '__main__':
         print(f"\nFile hidden successfully in {output_path}")
 
     elif args.action == 'extract':
-        if not args.file or not args.key:
-            parser.error("extract action requires --file and --key arguments")
 
         orion = OrionH(args.key)
 
