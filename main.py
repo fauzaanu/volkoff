@@ -120,32 +120,32 @@ class OrionH:
             self.generate_key()
 
         encrypted_data = self.encrypt_file(source_path)
-        
+
         # Create orion_output directory if it doesn't exist
         output_dir = Path('orion_output')
         output_dir.mkdir(exist_ok=True)
-        
+
         if output_path is None:
             output_path = output_dir / f"{Path(source_path).stem}.safetensors"
-        
+
         # Prepare metadata and data
         metadata = {
             "filename": os.path.basename(source_path),
             "private_key": self.private_key.to_string().hex()
         }
-        
+
         # Create tensors dict with encrypted data
         tensors = {
             "encrypted_data": encrypted_data
         }
-        
+
         # Create output directory if it doesn't exist
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Save to fake safetensors file
         with open(output_path, 'wb') as f:
             f.write(encrypted_data)
-        
+
         return output_path
 
     def extract_file(self, safetensors_path, output_path):
@@ -153,56 +153,48 @@ class OrionH:
         # Load the encrypted data directly
         with open(safetensors_path, 'rb') as f:
             encrypted_data = f.read()
-        
+
         # Decrypt the data
         decrypted_data = self.decrypt_file(encrypted_data)
-        
+
         # Write decrypted data to output file
         with open(output_path, 'wb') as output:
             output.write(decrypted_data)
 
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='OrionH - File encryption and hiding tool')
     parser.add_argument('action', choices=['hide', 'extract'], help='Action to perform')
     parser.add_argument('--source', help='Source file path')
-    parser.add_argument('--container', help='Container file path')
     parser.add_argument('--key', help='Encryption key (required for extraction)')
 
     args = parser.parse_args()
 
-    try:
-        if args.action == 'hide':
-            if not args.source:
-                parser.error("hide action requires --source argument")
 
-            orion = OrionH()
-            orion.generate_key()
-            print("\nIMPORTANT: Save this encryption key securely (e.g., in Bitwarden).")
-            print("You will need it to decrypt your files later!")
-            print(f"\nEncryption Key: {orion.encryption_key}\n")
+    if args.action == 'hide':
+        if not args.source:
+            parser.error("hide action requires --source argument")
 
-            output_path = orion.hide_file(args.source, args.container)
-            print(f"\nFile hidden successfully in {output_path}")
+        orion = OrionH()
+        orion.generate_key()
+        print("\nIMPORTANT: Save this encryption key securely (e.g., in Bitwarden).")
+        print("You will need it to decrypt your files later!")
+        print(f"\nEncryption Key: {orion.encryption_key}\n")
 
-        elif args.action == 'extract':
-            if not args.container or not args.key:
-                parser.error("extract action requires --container and --key arguments")
+        output_path = orion.hide_file(args.source)
+        print(f"\nFile hidden successfully in {output_path}")
 
-            orion = OrionH(args.key)
+    elif args.action == 'extract':
+        if not args.source or not args.key:
+            parser.error("extract action requires --source and --key arguments")
 
-            # Create orion_output directory if it doesn't exist
-            output_dir = Path('orion_output')
-            output_dir.mkdir(exist_ok=True)
-            
-            # Use a default filename for recovered files
-            original_filename = "recovered_file"
-            output_path = output_dir / f"recovered_{original_filename}"
-            orion.extract_file(args.container, output_path)
-            print(f"File extracted successfully to {output_path}")
+        orion = OrionH(args.key)
 
-    except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
-        sys.exit(1)
+        # Create orion_output directory if it doesn't exist
+        output_dir = Path('orion_output')
+        output_dir.mkdir(exist_ok=True)
 
-if __name__ == '__main__':
-    main()
+        # Use a default filename for recovered files
+        original_filename = "recovered_file"
+        output_path = output_dir / f"recovered_{original_filename}"
+        orion.extract_file(args.source, output_path)
+        print(f"File extracted successfully to {output_path}")
