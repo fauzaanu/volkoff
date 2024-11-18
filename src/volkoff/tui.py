@@ -92,14 +92,17 @@ def process_file(
                 Volkoff = Volkoff(key)
                 task = progress.add_task("[cyan]Decrypting...", total=100)
 
-                with open(file_path, "rb") as f:
-                    stored_data = f.read()
-                _, rest = stored_data.split(b"###KEY###", 1)
-                original_ext, _ = rest.split(b"###EXT###", 1)
-                original_ext = original_ext.decode()
-
+                # Get original name without extension
                 original_name = Path(file_path).stem
-                output_path = output_dir / f"{original_name}{original_ext}"
+                
+                # We'll get the actual extension after decryption
+                temp_output_path = output_dir / f"{original_name}_decrypted"
+                
+                # Extract will handle decryption and proper extension
+                Volkoff.extract_file(file_path, temp_output_path)
+                
+                # Use the actual output path for display
+                output_path = temp_output_path
 
                 for i in range(100):
                     progress.update(task, advance=1)
