@@ -98,11 +98,13 @@ def handle_folder(console, current_dir):
 
             # Compress the directory into a zip file, without traversing into subdirectories
             try:
-                # Get list of files to compress first
+                # Calculate total size for progress bar
+                total_size = 0
                 files_to_compress = []
                 for file in os.listdir(dir_to_compress):
                     file_path = os.path.join(dir_to_compress, file)
                     if os.path.isfile(file_path):
+                        total_size += os.path.getsize(file_path)
                         files_to_compress.append(file_path)
 
                 with Progress(
@@ -112,15 +114,23 @@ def handle_folder(console, current_dir):
                     TaskProgressColumn(),
                 ) as progress:
                     compress_task = progress.add_task(
-                        "Compressing files...", 
-                        total=len(files_to_compress)
+                        "Compressing files...",
+                        total=total_size
                     )
                     
+                    buffer_size = 1024 * 1024  # 1MB buffer
                     with zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                         for file_path in files_to_compress:
                             arcname = os.path.relpath(file_path, start=dir_to_compress)
-                            zipf.write(file_path, arcname)
-                            progress.advance(compress_task)
+                            with open(file_path, 'rb') as f:
+                                # Add file to zip with custom write function to track progress
+                                with zipf.open(arcname, 'w', force_zip64=True) as dest:
+                                    while True:
+                                        buf = f.read(buffer_size)
+                                        if not buf:
+                                            break
+                                        dest.write(buf)
+                                        progress.advance(compress_task, len(buf))
 
                 console.print(
                     f"\n[bold green]Directory '{dir_path}' successfully compressed to '{zip_file_path}'[/]"
