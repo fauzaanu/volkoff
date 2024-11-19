@@ -53,33 +53,33 @@ class Volkoff:
         metadata = private_key + b"|" + file_ext.encode() + b"|"
         metadata_nonce = os.urandom(12)
         encrypted_metadata = self.aesgcm.encrypt(metadata_nonce, metadata, None)
-        
+
         # Write metadata length, nonce and encrypted metadata
         result = bytearray()
         metadata_size = len(encrypted_metadata).to_bytes(8, 'big')
         result.extend(metadata_size + metadata_nonce + encrypted_metadata)
-        
+
         # Then encrypt file data in chunks
         total_data = len(file_data)
         offset = 0
         chunk_number = 0
-        
+
         while offset < total_data:
             remaining = total_data - offset
             current_chunk_size = min(chunk_size, remaining)
             chunk = file_data[offset:offset + current_chunk_size]
-            
+
             # Generate unique nonce for each chunk
             chunk_nonce = os.urandom(8) + chunk_number.to_bytes(4, 'big')
             encrypted_chunk = self.aesgcm.encrypt(chunk_nonce, chunk, None)
-            
+
             # Store chunk size, nonce and encrypted data
             chunk_size_bytes = len(encrypted_chunk).to_bytes(8, 'big')
             result.extend(chunk_size_bytes + chunk_nonce + encrypted_chunk)
-            
+
             offset += current_chunk_size
             chunk_number += 1
-            
+
         return bytes(result)
 
     def decrypt_container(self, encrypted_container: bytes) -> tuple[bytes, str, bytes]:
@@ -87,54 +87,54 @@ class Volkoff:
         try:
             offset = 0
             total_size = len(encrypted_container)
-            
+
             # First read and decrypt metadata
             if offset + 8 > total_size:
                 raise ValueError("Container is too small to contain metadata size")
             metadata_size = int.from_bytes(encrypted_container[offset:offset + 8], 'big')
             offset += 8
-            
+
             if offset + 12 > total_size:
                 raise ValueError("Container is too small to contain metadata nonce")
             metadata_nonce = encrypted_container[offset:offset + 12]
             offset += 12
-            
+
             if offset + metadata_size > total_size:
                 raise ValueError("Container is too small to contain metadata")
             encrypted_metadata = encrypted_container[offset:offset + metadata_size]
             offset += metadata_size
-            
+
             decrypted_metadata = self.aesgcm.decrypt(metadata_nonce, encrypted_metadata, None)
             try:
                 private_key, file_ext, _ = decrypted_metadata.split(b"|", 2)
             except ValueError:
                 raise ValueError("Invalid metadata format")
-            
+
             # Then decrypt file data chunks
             decrypted_data = bytearray()
-            
+
             while offset < total_size:
                 # Ensure we have enough data for the chunk header
                 if offset + 8 > total_size:
                     raise ValueError("Incomplete chunk size header")
                 chunk_size = int.from_bytes(encrypted_container[offset:offset + 8], 'big')
                 offset += 8
-                
+
                 if offset + 12 > total_size:
                     raise ValueError("Incomplete chunk nonce")
                 chunk_nonce = encrypted_container[offset:offset + 12]
                 offset += 12
-                
+
                 if offset + chunk_size > total_size:
                     raise ValueError("Incomplete chunk data")
                 encrypted_chunk = encrypted_container[offset:offset + chunk_size]
                 decrypted_chunk = self.aesgcm.decrypt(chunk_nonce, encrypted_chunk, None)
                 decrypted_data.extend(decrypted_chunk)
-                
+
                 offset += chunk_size
-            
+
             return private_key, file_ext.decode(), bytes(decrypted_data)
-            
+
         except ValueError as e:
             raise ValueError(f"Container decryption failed: {str(e)}")
         except Exception as e:
@@ -143,26 +143,26 @@ class Volkoff:
     def encrypt_file(self, file_path, chunk_size=64*1024*1024):  # 64MB chunks
         """Encrypt a file using AES-GCM with streaming"""
         encrypted_data = bytearray()
-        
+
         with open(file_path, "rb") as file:
             chunk_number = 0
             while True:
                 chunk = file.read(chunk_size)
                 if not chunk:
                     break
-                    
+
                 # Generate unique nonce for each chunk using chunk number
                 nonce = os.urandom(8) + chunk_number.to_bytes(4, 'big')
-                
+
                 # Encrypt chunk
                 encrypted_chunk = self.aesgcm.encrypt(nonce, chunk, None)
-                
+
                 # Store chunk size, nonce and encrypted data
                 chunk_size_bytes = len(encrypted_chunk).to_bytes(8, 'big')
                 encrypted_data.extend(chunk_size_bytes + nonce + encrypted_chunk)
-                
+
                 chunk_number += 1
-                
+
         return bytes(encrypted_data)
 
     def decrypt_file(self, encrypted_data):
@@ -170,23 +170,23 @@ class Volkoff:
         try:
             decrypted_data = bytearray()
             offset = 0
-            
+
             while offset < len(encrypted_data):
                 # Read chunk size
                 chunk_size = int.from_bytes(encrypted_data[offset:offset + 8], 'big')
                 offset += 8
-                
+
                 # Read nonce
                 nonce = encrypted_data[offset:offset + 12]
                 offset += 12
-                
+
                 # Read and decrypt chunk
                 encrypted_chunk = encrypted_data[offset:offset + chunk_size]
                 decrypted_chunk = self.aesgcm.decrypt(nonce, encrypted_chunk, None)
                 decrypted_data.extend(decrypted_chunk)
-                
+
                 offset += chunk_size
-                
+
             return bytes(decrypted_data)
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
@@ -241,8 +241,7 @@ def main():
                 success, key, output_path = process_file("hide", file_path)
                 display_result(success, key, output_path, console)
 
-            console.print("\n[bold yellow]Chuck Bartowski's last transmission:[/]")
-            console.print("[italic cyan]'It's hard to say goodbye... but the mission must end.'[/]")
+            console.print("[italic cyan]'It's hard to say goodbye...'[/]")
             time.sleep(1.5)
             return
 
