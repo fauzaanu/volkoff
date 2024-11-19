@@ -241,7 +241,7 @@ def main():
                 success, key, output_path = process_file("hide", file_path)
                 display_result(success, key, output_path, console)
 
-            console.print("[italic cyan]'It's hard to say goodbye...'[/]")
+            console.print("[italic cyan]'It's hard to say goodbye...' 👋[/]")
             time.sleep(1.5)
             return
 
