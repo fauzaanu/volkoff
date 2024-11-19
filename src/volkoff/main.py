@@ -216,7 +216,7 @@ def main():
             console.print("\n" + create_menu())
 
             choice = Prompt.ask(
-                "\nEnter your choice", choices=["h", "d", "q", "ch"], default="q"
+                "\nEnter your choice", choices=["h", "d", "q", "z"], default="q"
             ).lower()
 
             if choice == "q":
@@ -236,7 +236,7 @@ def main():
                 )
                 display_result(success, error_msg, output_path, console)
 
-            elif choice == "ch":  # Compress Folder and Hide
+            elif choice == "z":  # Compress Folder and Hide
                 file_path = handle_folder(console, current_dir)
                 success, key, output_path = process_file("hide", file_path)
                 display_result(success, key, output_path, console)
