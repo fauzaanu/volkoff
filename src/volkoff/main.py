@@ -46,24 +46,77 @@ class Volkoff:
             self.aesgcm = AESGCM(self.key)
 
     def encrypt_container(
-        self, private_key: bytes, file_ext: str, file_data: bytes
+        self, private_key: bytes, file_ext: str, file_data: bytes, chunk_size=64*1024*1024
     ) -> bytes:
-        """Encrypt the entire container including metadata"""
-        # Structure: [encrypted[private_key | ext | data]]
-        container = private_key + b"|" + file_ext.encode() + b"|" + file_data
-        nonce = os.urandom(12)
-        encrypted_container = self.aesgcm.encrypt(nonce, container, None)
-        return nonce + encrypted_container
+        """Encrypt the entire container including metadata using chunked approach"""
+        # First encrypt metadata with a single chunk
+        metadata = private_key + b"|" + file_ext.encode() + b"|"
+        metadata_nonce = os.urandom(12)
+        encrypted_metadata = self.aesgcm.encrypt(metadata_nonce, metadata, None)
+        
+        # Write metadata length, nonce and encrypted metadata
+        result = bytearray()
+        metadata_size = len(encrypted_metadata).to_bytes(8, 'big')
+        result.extend(metadata_size + metadata_nonce + encrypted_metadata)
+        
+        # Then encrypt file data in chunks
+        offset = 0
+        chunk_number = 0
+        
+        while offset < len(file_data):
+            chunk = file_data[offset:offset + chunk_size]
+            # Generate unique nonce for each chunk
+            chunk_nonce = os.urandom(8) + chunk_number.to_bytes(4, 'big')
+            encrypted_chunk = self.aesgcm.encrypt(chunk_nonce, chunk, None)
+            
+            # Store chunk size, nonce and encrypted data
+            chunk_size_bytes = len(encrypted_chunk).to_bytes(8, 'big')
+            result.extend(chunk_size_bytes + chunk_nonce + encrypted_chunk)
+            
+            offset += chunk_size
+            chunk_number += 1
+            
+        return bytes(result)
 
     def decrypt_container(self, encrypted_container: bytes) -> tuple[bytes, str, bytes]:
-        """Decrypt the container and return components"""
-        nonce = encrypted_container[:12]
-        ciphertext = encrypted_container[12:]
-
+        """Decrypt the container and return components using chunked approach"""
         try:
-            decrypted = self.aesgcm.decrypt(nonce, ciphertext, None)
-            private_key, file_ext, file_data = decrypted.split(b"|", 2)
-            return private_key, file_ext.decode(), file_data
+            offset = 0
+            
+            # First read and decrypt metadata
+            metadata_size = int.from_bytes(encrypted_container[offset:offset + 8], 'big')
+            offset += 8
+            
+            metadata_nonce = encrypted_container[offset:offset + 12]
+            offset += 12
+            
+            encrypted_metadata = encrypted_container[offset:offset + metadata_size]
+            offset += metadata_size
+            
+            decrypted_metadata = self.aesgcm.decrypt(metadata_nonce, encrypted_metadata, None)
+            private_key, file_ext, _ = decrypted_metadata.split(b"|", 2)
+            
+            # Then decrypt file data chunks
+            decrypted_data = bytearray()
+            
+            while offset < len(encrypted_container):
+                # Read chunk size
+                chunk_size = int.from_bytes(encrypted_container[offset:offset + 8], 'big')
+                offset += 8
+                
+                # Read nonce
+                chunk_nonce = encrypted_container[offset:offset + 12]
+                offset += 12
+                
+                # Read and decrypt chunk
+                encrypted_chunk = encrypted_container[offset:offset + chunk_size]
+                decrypted_chunk = self.aesgcm.decrypt(chunk_nonce, encrypted_chunk, None)
+                decrypted_data.extend(decrypted_chunk)
+                
+                offset += chunk_size
+            
+            return private_key, file_ext.decode(), bytes(decrypted_data)
+            
         except Exception as e:
             raise ValueError(f"Container decryption failed: {str(e)}")
 
