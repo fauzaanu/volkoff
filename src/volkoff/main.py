@@ -241,8 +241,10 @@ def main():
                 success, key, output_path = process_file("hide", file_path)
                 display_result(success, key, output_path, console)
 
-            Prompt.ask("\nIts hard to say Goodbye!")
-            operation = False
+            console.print("\n[bold yellow]Chuck Norris says:[/]")
+            console.print("[italic cyan]'It's hard to say goodbye... because I might kill you.'[/]")
+            time.sleep(1.5)
+            return
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user[/]")
