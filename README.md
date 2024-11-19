@@ -47,9 +47,9 @@ vk
 From 0.1.44 supports the VOLKOFF_KEY env variable and a new ch option where a folder will be compressed+encrypted.
 
 The recommended aproach is to keep the key in a password manager and to temporarily set it in a terminal session.
-In linux: export VOLKOFF_KEY=<key>
-In Windows (CMD): set VOLKOFF_KEY=<key>
-In Windows (PS): $Env:VOLKOFF_KEY = "<key>"
+- linux: `export VOLKOFF_KEY=<key>`
+- Windows (CMD): `set VOLKOFF_KEY=<key>`
+- Windows (PS): `$Env:VOLKOFF_KEY = "<key>"`
 
 
 ## Disclaimer
