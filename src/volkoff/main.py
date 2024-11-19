@@ -241,8 +241,8 @@ def main():
                 success, key, output_path = process_file("hide", file_path)
                 display_result(success, key, output_path, console)
 
-            console.print("\n[bold yellow]Chuck Norris says:[/]")
-            console.print("[italic cyan]'It's hard to say goodbye... because I might kill you.'[/]")
+            console.print("\n[bold yellow]Chuck Bartowski's last transmission:[/]")
+            console.print("[italic cyan]'It's hard to say goodbye... but the mission must end.'[/]")
             time.sleep(1.5)
             return
 
