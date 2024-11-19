@@ -60,11 +60,15 @@ class Volkoff:
         result.extend(metadata_size + metadata_nonce + encrypted_metadata)
         
         # Then encrypt file data in chunks
+        total_data = len(file_data)
         offset = 0
         chunk_number = 0
         
-        while offset < len(file_data):
-            chunk = file_data[offset:offset + chunk_size]
+        while offset < total_data:
+            remaining = total_data - offset
+            current_chunk_size = min(chunk_size, remaining)
+            chunk = file_data[offset:offset + current_chunk_size]
+            
             # Generate unique nonce for each chunk
             chunk_nonce = os.urandom(8) + chunk_number.to_bytes(4, 'big')
             encrypted_chunk = self.aesgcm.encrypt(chunk_nonce, chunk, None)
@@ -73,7 +77,7 @@ class Volkoff:
             chunk_size_bytes = len(encrypted_chunk).to_bytes(8, 'big')
             result.extend(chunk_size_bytes + chunk_nonce + encrypted_chunk)
             
-            offset += chunk_size
+            offset += current_chunk_size
             chunk_number += 1
             
         return bytes(result)
@@ -82,33 +86,47 @@ class Volkoff:
         """Decrypt the container and return components using chunked approach"""
         try:
             offset = 0
+            total_size = len(encrypted_container)
             
             # First read and decrypt metadata
+            if offset + 8 > total_size:
+                raise ValueError("Container is too small to contain metadata size")
             metadata_size = int.from_bytes(encrypted_container[offset:offset + 8], 'big')
             offset += 8
             
+            if offset + 12 > total_size:
+                raise ValueError("Container is too small to contain metadata nonce")
             metadata_nonce = encrypted_container[offset:offset + 12]
             offset += 12
             
+            if offset + metadata_size > total_size:
+                raise ValueError("Container is too small to contain metadata")
             encrypted_metadata = encrypted_container[offset:offset + metadata_size]
             offset += metadata_size
             
             decrypted_metadata = self.aesgcm.decrypt(metadata_nonce, encrypted_metadata, None)
-            private_key, file_ext, _ = decrypted_metadata.split(b"|", 2)
+            try:
+                private_key, file_ext, _ = decrypted_metadata.split(b"|", 2)
+            except ValueError:
+                raise ValueError("Invalid metadata format")
             
             # Then decrypt file data chunks
             decrypted_data = bytearray()
             
-            while offset < len(encrypted_container):
-                # Read chunk size
+            while offset < total_size:
+                # Ensure we have enough data for the chunk header
+                if offset + 8 > total_size:
+                    raise ValueError("Incomplete chunk size header")
                 chunk_size = int.from_bytes(encrypted_container[offset:offset + 8], 'big')
                 offset += 8
                 
-                # Read nonce
+                if offset + 12 > total_size:
+                    raise ValueError("Incomplete chunk nonce")
                 chunk_nonce = encrypted_container[offset:offset + 12]
                 offset += 12
                 
-                # Read and decrypt chunk
+                if offset + chunk_size > total_size:
+                    raise ValueError("Incomplete chunk data")
                 encrypted_chunk = encrypted_container[offset:offset + chunk_size]
                 decrypted_chunk = self.aesgcm.decrypt(chunk_nonce, encrypted_chunk, None)
                 decrypted_data.extend(decrypted_chunk)
@@ -117,8 +135,10 @@ class Volkoff:
             
             return private_key, file_ext.decode(), bytes(decrypted_data)
             
-        except Exception as e:
+        except ValueError as e:
             raise ValueError(f"Container decryption failed: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Unexpected error during decryption: {str(e)}")
 
     def encrypt_file(self, file_path, chunk_size=64*1024*1024):  # 64MB chunks
         """Encrypt a file using AES-GCM with streaming"""
