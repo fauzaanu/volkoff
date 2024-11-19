@@ -14,7 +14,7 @@ vk
 
 ## Implementation Details
 
-Encryption Process:
+### Encryption Process
 1. Generates a 256-bit AES key for secure encryption
 2. Creates a container format that includes:
    - File extension metadata
@@ -23,7 +23,7 @@ Encryption Process:
 3. Encrypts the entire container using AES-256-GCM
 4. Returns the encryption key for secure storage
 
-Decryption Process:
+### Decryption Process
 1. Validates the provided encryption key
 2. Extracts the nonce from the encrypted container
 3. Decrypts the container to retrieve:
@@ -38,10 +38,17 @@ Decryption Process:
 - Secure container format preserving file metadata
 - Authentication to prevent tampering
 
-Important Security Notes:
+### Important Security Notes
 - Store encryption keys securely - they cannot be recovered
 - Maintain secure backups of encryption keys
 - Verify successful decryption after encrypting critical files
+
+> From 0.1.44 supports the VOLKOFF_KEY env variable. Use this incase you want to store one master key for multiple files.
+> Also supports compressing a folder with the ch option
+> In linux: export VOLKOFF_KEY=<key>
+> In Windows (CMD): set VOLKOFF_KEY=<key>
+> In Windows (PS): $Env:VOLKOFF_KEY = "<key>"
+
 
 ## Disclaimer
 
