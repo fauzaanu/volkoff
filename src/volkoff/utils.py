@@ -1,7 +1,6 @@
 import os
 import time
 import zipfile
-from pathlib import Path
 
 from rich.prompt import Prompt
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
