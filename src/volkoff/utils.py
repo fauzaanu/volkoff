@@ -1,9 +1,10 @@
 import os
 import time
 import zipfile
-
+from pathlib import Path
 
 from rich.prompt import Prompt
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 from volkoff.tui import list_current_files, format_directory_listing
 
@@ -98,15 +99,29 @@ def handle_folder(console, current_dir):
 
             # Compress the directory into a zip file, without traversing into subdirectories
             try:
-                with zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                    # List files in the root of the selected directory, without walking into subdirectories
-                    for file in os.listdir(dir_to_compress):
-                        file_path = os.path.join(dir_to_compress, file)
+                # Get list of files to compress first
+                files_to_compress = []
+                for file in os.listdir(dir_to_compress):
+                    file_path = os.path.join(dir_to_compress, file)
+                    if os.path.isfile(file_path):
+                        files_to_compress.append(file_path)
 
-                        # Only add files (not directories) to the zip file
-                        if os.path.isfile(file_path):
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(),
+                    TaskProgressColumn(),
+                ) as progress:
+                    compress_task = progress.add_task(
+                        "Compressing files...", 
+                        total=len(files_to_compress)
+                    )
+                    
+                    with zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                        for file_path in files_to_compress:
                             arcname = os.path.relpath(file_path, start=dir_to_compress)
                             zipf.write(file_path, arcname)
+                            progress.advance(compress_task)
 
                 console.print(
                     f"\n[bold green]Directory '{dir_path}' successfully compressed to '{zip_file_path}'[/]"
