@@ -43,11 +43,13 @@ vk
 - Maintain secure backups of encryption keys
 - Verify successful decryption after encrypting critical files
 
-> From 0.1.44 supports the VOLKOFF_KEY env variable. Use this incase you want to store one master key for multiple files.
-> Also supports compressing a folder with the ch option
-> In linux: export VOLKOFF_KEY=<key>
-> In Windows (CMD): set VOLKOFF_KEY=<key>
-> In Windows (PS): $Env:VOLKOFF_KEY = "<key>"
+### Single key, Multiple Files
+From 0.1.44 supports the VOLKOFF_KEY env variable and a new ch option where a folder will be compressed+encrypted.
+
+The recommended aproach is to keep the key in a password manager and to temporarily set it in a terminal session.
+In linux: export VOLKOFF_KEY=<key>
+In Windows (CMD): set VOLKOFF_KEY=<key>
+In Windows (PS): $Env:VOLKOFF_KEY = "<key>"
 
 
 ## Disclaimer
