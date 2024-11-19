@@ -67,31 +67,42 @@ class Volkoff:
         except Exception as e:
             raise ValueError(f"Container decryption failed: {str(e)}")
 
-    def encrypt_file(self, file_path):
-        """Encrypt a file using AES-GCM"""
-        with open(file_path, "rb") as file:
-            file_data = file.read()
-
+    def encrypt_file(self, file_path, chunk_size=1024*1024):  # 1MB chunks
+        """Encrypt a file using AES-GCM with streaming"""
         # Generate nonce
         nonce = os.urandom(12)
+        encrypted_chunks = []
+        
+        with open(file_path, "rb") as file:
+            while True:
+                chunk = file.read(chunk_size)
+                if not chunk:
+                    break
+                # Encrypt each chunk
+                encrypted_chunk = self.aesgcm.encrypt(nonce, chunk, None)
+                encrypted_chunks.append(encrypted_chunk)
 
-        # Encrypt data with authenticated encryption
-        encrypted_data = self.aesgcm.encrypt(nonce, file_data, None)
+        # Combine nonce and all encrypted chunks
+        return nonce + b"".join(encrypted_chunks)
 
-        # Combine nonce and encrypted data
-        return nonce + encrypted_data
-
-    def decrypt_file(self, encrypted_data):
-        """Decrypt file using AES-GCM"""
+    def decrypt_file(self, encrypted_data, chunk_size=1024*1024):  # 1MB chunks
+        """Decrypt file using AES-GCM with streaming"""
         try:
             # Split nonce and ciphertext
             nonce = encrypted_data[:12]
             ciphertext = encrypted_data[12:]
-
-            # Decrypt and authenticate data
-            decrypted_data = self.aesgcm.decrypt(nonce, ciphertext, None)
-
-            return decrypted_data
+            
+            # Process ciphertext in chunks
+            decrypted_chunks = []
+            offset = 0
+            
+            while offset < len(ciphertext):
+                chunk = ciphertext[offset:offset + chunk_size]
+                decrypted_chunk = self.aesgcm.decrypt(nonce, chunk, None)
+                decrypted_chunks.append(decrypted_chunk)
+                offset += chunk_size
+            
+            return b"".join(decrypted_chunks)
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
 
