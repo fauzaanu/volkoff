@@ -12,7 +12,14 @@ def create_header() -> str:
 
 def create_menu() -> str:
     """Create the main menu text"""
-    return "[h]🔒 Hide  [d]🔓 Extract  [q]🚪 Quit [ch] Compress + Hide (Directory only)"
+    return (
+        "\n╭──────────────── [bold cyan]MENU[/] ────────────────╮\n"
+        "│ [bold white on blue] h [/] [cyan]🔒 Hide File[/]                      │\n"
+        "│ [bold white on green] d [/] [cyan]🔓 Extract File[/]                  │\n"
+        "│ [bold white on red] q [/] [cyan]🚪 Exit[/]                          │\n"
+        "│ [bold white on yellow]ch [/] [cyan]📦 Compress + Hide Directory[/]    │\n"
+        "╰─────────────────────────────────────────╯"
+    )
 
 
 def list_current_files(current_dir: Path = Path(".")):
