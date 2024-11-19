@@ -12,7 +12,7 @@ def create_header() -> str:
 
 def create_menu() -> str:
     """Create the main menu text"""
-    return "[H]🔒 Hide  [D]🔓 Extract  [Q]🚪 Quit"
+    return "[h]🔒 Hide  [d]🔓 Extract  [q]🚪 Quit [ch] Compress + Hide (Directory only)"
 
 
 def list_current_files(current_dir: Path = Path(".")):
@@ -95,7 +95,7 @@ def process_file(
                 # Get original name without extension
                 original_name = Path(file_path).stem
                 temp_output_path = output_dir / original_name
-                
+
                 # Extract will handle decryption and return final path with proper extension
                 output_path = Volkoff.extract_file(file_path, temp_output_path)
 
