@@ -67,42 +67,54 @@ class Volkoff:
         except Exception as e:
             raise ValueError(f"Container decryption failed: {str(e)}")
 
-    def encrypt_file(self, file_path, chunk_size=1024*1024):  # 1MB chunks
+    def encrypt_file(self, file_path, chunk_size=64*1024*1024):  # 64MB chunks
         """Encrypt a file using AES-GCM with streaming"""
-        # Generate nonce
-        nonce = os.urandom(12)
-        encrypted_chunks = []
+        encrypted_data = bytearray()
         
         with open(file_path, "rb") as file:
+            chunk_number = 0
             while True:
                 chunk = file.read(chunk_size)
                 if not chunk:
                     break
-                # Encrypt each chunk
+                    
+                # Generate unique nonce for each chunk using chunk number
+                nonce = os.urandom(8) + chunk_number.to_bytes(4, 'big')
+                
+                # Encrypt chunk
                 encrypted_chunk = self.aesgcm.encrypt(nonce, chunk, None)
-                encrypted_chunks.append(encrypted_chunk)
+                
+                # Store chunk size, nonce and encrypted data
+                chunk_size_bytes = len(encrypted_chunk).to_bytes(8, 'big')
+                encrypted_data.extend(chunk_size_bytes + nonce + encrypted_chunk)
+                
+                chunk_number += 1
+                
+        return bytes(encrypted_data)
 
-        # Combine nonce and all encrypted chunks
-        return nonce + b"".join(encrypted_chunks)
-
-    def decrypt_file(self, encrypted_data, chunk_size=1024*1024):  # 1MB chunks
+    def decrypt_file(self, encrypted_data):
         """Decrypt file using AES-GCM with streaming"""
         try:
-            # Split nonce and ciphertext
-            nonce = encrypted_data[:12]
-            ciphertext = encrypted_data[12:]
-            
-            # Process ciphertext in chunks
-            decrypted_chunks = []
+            decrypted_data = bytearray()
             offset = 0
             
-            while offset < len(ciphertext):
-                chunk = ciphertext[offset:offset + chunk_size]
-                decrypted_chunk = self.aesgcm.decrypt(nonce, chunk, None)
-                decrypted_chunks.append(decrypted_chunk)
+            while offset < len(encrypted_data):
+                # Read chunk size
+                chunk_size = int.from_bytes(encrypted_data[offset:offset + 8], 'big')
+                offset += 8
+                
+                # Read nonce
+                nonce = encrypted_data[offset:offset + 12]
+                offset += 12
+                
+                # Read and decrypt chunk
+                encrypted_chunk = encrypted_data[offset:offset + chunk_size]
+                decrypted_chunk = self.aesgcm.decrypt(nonce, encrypted_chunk, None)
+                decrypted_data.extend(decrypted_chunk)
+                
                 offset += chunk_size
-            
-            return b"".join(decrypted_chunks)
+                
+            return bytes(decrypted_data)
         except Exception as e:
             raise ValueError(f"Decryption failed: {str(e)}")
 
