@@ -32,7 +32,7 @@ class TestVolkoffH(unittest.TestCase):
 
     def test_encryption_key_generation(self):
         """Test that encryption keys are generated correctly"""
-        Volkoff = Volkoff()
+        Volkoff = self.Volkoff()
         self.assertIsInstance(Volkoff.encryption_key, str)
         self.assertGreater(len(Volkoff.encryption_key), 0)
 

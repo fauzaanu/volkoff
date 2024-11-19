@@ -1,17 +1,17 @@
 import os
 import time
 from pathlib import Path
+
 from rich.console import Console
 from rich.prompt import Prompt
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from volkoff.utils import handle_files_folder, handle_folder
 from .tui import (
-    list_current_files,
     create_menu,
     create_header,
     process_file,
     display_result,
-    format_directory_listing,
 )
 
 
@@ -37,10 +37,17 @@ class Volkoff:
         else:
             # For hiding: generate new random keys
             self.key = os.urandom(32)  # Main encryption key
-            self.encryption_key = self.key.hex()
+
+            if os.getenv("VOLKOFF_KEY"):
+                self.encryption_key = os.getenv("VOLKOFF_KEY")
+            else:
+                self.encryption_key = self.key.hex()
+
             self.aesgcm = AESGCM(self.key)
 
-    def encrypt_container(self, private_key: bytes, file_ext: str, file_data: bytes) -> bytes:
+    def encrypt_container(
+        self, private_key: bytes, file_ext: str, file_data: bytes
+    ) -> bytes:
         """Encrypt the entire container including metadata"""
         # Structure: [encrypted[private_key | ext | data]]
         container = private_key + b"|" + file_ext.encode() + b"|" + file_data
@@ -103,12 +110,8 @@ class Volkoff:
 
 def main():
     console = Console()
-
-    import sys
-
-    # Get input file from command line if provided
-    input_file = sys.argv[1] if len(sys.argv) > 1 else None
     operation = True
+    current_dir = Path(".")
 
     while operation:
         try:
@@ -116,74 +119,40 @@ def main():
             console.print(create_header())
             console.print("\n" + create_menu())
 
-            # If input file was provided via command line, automatically hide it
-            if input_file:
-                console.print(f"\n[bold cyan]Processing file:[/] {input_file}")
-                file_path = input_file
-                choice = "h"
-            else:
-                # Otherwise show menu and get user choice
-                choice = Prompt.ask(
-                    "\nEnter your choice", choices=["h", "d", "q"], default="q"
-                ).lower()
+            choice = Prompt.ask(
+                "\nEnter your choice", choices=["h", "d", "q", "ch"], default="q"
+            ).lower()
 
-                if choice == "q":
-                    console.print("[yellow]Goodbye![/]")
-                    return
-                current_dir = Path(".")
-                while True:
-                    files, dirs, current_path = list_current_files(current_dir)
-                    listing = format_directory_listing(files, dirs, current_path)
-                    console.print(listing)
-
-                    if not files and not dirs:
-                        console.print(
-                            "\n[bold red]No files found in this directory![/]"
-                        )
-                        time.sleep(2)
-                        break
-
-                    try:
-                        file_index = int(Prompt.ask("\nEnter number", default="1"))
-
-                        # Handle parent directory
-                        if file_index == 0 and current_path != current_path.root:
-                            current_dir = current_dir.parent
-                            continue
-
-                        # Handle directory selection
-                        if file_index <= len(dirs):
-                            current_dir = dirs[file_index - 1]
-                            continue
-
-                        # Handle file selection
-                        if file_index <= len(dirs) + len(files):
-                            file_path = files[file_index - len(dirs) - 1]
-                            break
-
-                        raise ValueError("Invalid selection!")
-                    except ValueError as e:
-                        console.print(f"[bold red]Error:[/] {str(e)}")
-                        time.sleep(1)
-                        continue
+            if choice == "q":
+                console.print("[yellow]Goodbye![/]")
+                return
 
             if choice == "h":  # Hide
+                file_path = handle_files_folder(console, current_dir)
                 success, key, output_path = process_file("hide", file_path)
                 display_result(success, key, output_path, console)
-            else:  # Decrypt/Extract
+
+            elif choice == "d":  # Extract
+                file_path = handle_files_folder(console, current_dir)
                 key = Prompt.ask("Enter encryption key")
                 success, error_msg, output_path = process_file(
                     "extract", file_path, key
                 )
                 display_result(success, error_msg, output_path, console)
 
-            Prompt.ask("\nPress ENTER to continue")
+            elif choice == "ch":  # Compress Folder and Hide
+                file_path = handle_folder(console, current_dir)
+                success, key, output_path = process_file("hide", file_path)
+                display_result(success, key, output_path, console)
+
+            Prompt.ask("\nIts hard to say Goodbye!")
             operation = False
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Operation cancelled by user[/]")
             time.sleep(1)
             break
+
         except Exception as e:
             console.print(f"\n[bold red]An error occurred:[/] {str(e)}")
             time.sleep(2)
