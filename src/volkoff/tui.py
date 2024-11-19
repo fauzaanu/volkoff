@@ -27,10 +27,10 @@ def create_header() -> str:
 def create_menu() -> str:
     """Create the main menu text"""
     return (
-        "[bold white on blue]  h  [/] [cyan]🔒 Hide File[/]\n"
-        "[bold white on green]  d  [/] [cyan]🔓 Extract File[/]\n"
-        "[bold white on red]  q  [/] [cyan]🚪 Exit[/]\n"
-        "[bold white on yellow]  z  [/] [cyan]📦 Compress + Hide Directory[/]\n"
+        "[bold white on blue]  h  [/] [cyan]🔒 Encrypt File[/]\n"
+        "[bold white on blue]  d  [/] [cyan]🔓 Decrypt File[/]\n"
+        "[bold white on blue]  z  [/] [cyan]📦 Encrypt Folder[/]\n"
+        "\n[bold white on red]  q  [/] [cyan]🚪 Exit[/]\n"
     )
 
 
